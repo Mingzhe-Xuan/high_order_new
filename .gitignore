@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local data and generated caches
+*.db
+*.sqlite
+*.sqlite3
+neighbor_list/
+
+# Training outputs
+runs/
+checkpoints/
+outputs/
+logs/
+
+# Model/checkpoint artifacts
+*.pt
+!src/model/Jd.pt
+!src/model/z_rot_indices_lmax12.pt

@@ -9,8 +9,7 @@ import numpy as np
 try:
     from .utils import full2voigt, voigt2full, _l_max
 except ImportError:
-    # For equivariance test
-    from high_order.src.model.utils import full2voigt, voigt2full, _l_max
+    from utils import full2voigt, voigt2full, _l_max
 
 class ReadoutViaGradLayer(nn.Module):
     def __init__(self, l_max: int, symmetry: str = None):

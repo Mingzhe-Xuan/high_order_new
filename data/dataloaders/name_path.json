@@ -1,5 +1,5 @@
 {
-    "mp": "data/materials_project_partial.db",
+    "mp": "data/materials_project_full.db",
     "alexandria": "data/alexandria.db",
     "formation_energy": "data/jarvis__dft_3d_2021/all/raw/raw_data.pkl",
     "opt_bandgap": "data/jarvis__dft_3d_2021/all/raw/raw_data.pkl",

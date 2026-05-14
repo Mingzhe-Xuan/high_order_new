@@ -1,11 +1,7 @@
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
 import torch
 from e3nn.o3 import Irreps, rand_matrix
-from high_order.src.model.equivariant_layer import EquivariantLayer
-from high_order.src.model.readout_layer import ReadoutLayer
+from src.model.equivariant_layer import EquivariantLayer
+from src.model.readout_layer import ReadoutLayer
 
 def test_equivariant_layer():
     irreps_in = Irreps("0e + 2x1o")

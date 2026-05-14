@@ -9,7 +9,7 @@ from e3nn.nn import Gate, BatchNorm
 try:
     from .layer_norm import SeperableLayerNorm
 except ImportError:
-    from high_order.src.model.layer_norm import SeperableLayerNorm
+    from layer_norm import SeperableLayerNorm
 
 
 class FinalMLP(nn.Module):

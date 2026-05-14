@@ -14,12 +14,11 @@ try:
     from .final_mlp import FinalMLP
     from .layer_norm import SeperableLayerNorm
 except ImportError:
-    # For equivariance test
-    from high_order.src.model.tensor_product import get_tp
+    from tensor_product import get_tp
     from utils import add_irreps_tensor
-    from high_order.src.model.utils.add_irreps_tensor import selective_residual_add
-    from high_order.src.model.final_mlp import FinalMLP
-    from high_order.src.model.layer_norm import SeperableLayerNorm
+    from utils.add_irreps_tensor import selective_residual_add
+    from final_mlp import FinalMLP
+    from layer_norm import SeperableLayerNorm
 
 
 class BaseEquivariantLayer(nn.Module):

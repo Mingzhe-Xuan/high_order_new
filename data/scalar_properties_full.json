@@ -1,0 +1,20 @@
+[
+    "formation_energy", // large
+    "opt_bandgap", // large
+    "total_energy", // large
+    "ehull", // large
+    "mbj_bandgap", // large
+    "bandgap", // large
+    "e_form", // large
+    "bulk_modulus",
+    "shear_modulus",
+    "energy_per_atom", // easy
+    "dielectric_scalar",
+    "exfoliation_energy",
+    "log_elasticity_scalar",
+    "mp_e_form", // large
+    "gap_pbe", // large
+    "e_form_per_unit_cell",
+    "phonons",
+    "kagome_energy"
+]

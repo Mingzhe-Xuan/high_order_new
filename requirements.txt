@@ -1,0 +1,17 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+--find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
+
+torch==2.11.0
+torch-geometric==2.7.0
+torch-scatter==2.1.2+pt211cpu
+pyg-lib==0.6.0+pt211cpu
+torch-cluster==1.6.3+pt211cpu
+torch-sparse==0.6.18+pt211cpu
+
+e3nn==0.5.6
+ase==3.26.0
+numpy==1.26.4
+scipy==1.17.0
+matplotlib==3.10.0
+tqdm==4.66.3
+tensorboard

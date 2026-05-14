@@ -1,0 +1,8 @@
+[
+    "dielectric",
+    "dielectric_ionic",
+    "elastic_sym_kbar",
+    "elastic_total_kbar",
+    "piezoelectric_C_m2",
+    "piezoelectric_e_Angst"
+]

@@ -1,0 +1,26 @@
+{
+    "dielectric": {
+        "l_max": 2,
+        "symmetry": "ij=ji"
+    },
+    "dielectric_ionic": {
+        "l_max": 2,
+        "symmetry": "ij=ji"
+    },
+    "elastic_sym_kbar": {
+        "l_max": 4,
+        "symmetry": "ijkl=jikl=ijlk=klij"
+    },
+    "elastic_total_kbar": {
+        "l_max": 4,
+        "symmetry": "ijkl=jikl=ijlk=klij"
+    },
+    "piezoelectric_C_m2": {
+        "l_max": 3,
+        "symmetry": "ijk=ikj"
+    },
+    "piezoelectric_e_Angst": {
+        "l_max": 3,
+        "symmetry": "ijk=ikj"
+    }
+}

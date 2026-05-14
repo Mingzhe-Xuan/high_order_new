@@ -204,9 +204,7 @@ def self_train(
                     loss = loss_fn(pred_force, force)
                     pointwise_mae = (pred_force - force).view(-1).abs().mean()
                     mse = (pred_force - force).view(-1).pow(2).mean()
-                    fnorm_error = abs(
-                        torch.norm(pred_force, dim=-1) - torch.norm(force, dim=-1)
-                    )
+                    fnorm_error = torch.norm(pred_force - force, dim=-1)
                     fnorm = torch.norm(force, dim=-1)
                     mean_fnorm_percent_error = (fnorm_error / (fnorm + 1e-8)).mean()
 

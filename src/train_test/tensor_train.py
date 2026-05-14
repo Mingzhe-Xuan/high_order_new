@@ -322,9 +322,8 @@ def tensor_train(
                 (pred_tensor_property - tensor_property).view(-1).abs().mean()
             )
             mse = (pred_tensor_property - tensor_property).view(-1).pow(2).mean()
-            fnorm_error = abs(
-                torch.norm(pred_tensor_property, dim=-1)
-                - torch.norm(tensor_property, dim=-1)
+            fnorm_error = torch.norm(
+                pred_tensor_property - tensor_property, dim=property_dim
             )
             fnorm = torch.norm(tensor_property, dim=-1)
             mean_fnorm = fnorm.mean()

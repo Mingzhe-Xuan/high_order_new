@@ -279,7 +279,7 @@ def train(
     self_trainset: DataLoader = None,
     scalar_dataloaders: dict[str, DataLoader] = None,
     tensor_dataloaders: dict[str, DataLoader] = None,
-    final_pooling: bool = False,
+    final_pooling: bool = True,
     # train_val_test: tuple[float, float, float] = (0.8, 0.1, 0.1),
     # batch_size: int = 32,
     # num_workers: int = 0,

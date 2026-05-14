@@ -169,7 +169,7 @@ def main(
     need_self_train: bool = True,
     need_scalar_train: bool = True,
     need_tensor_train: bool = True,
-    final_pooling: bool = False,
+    final_pooling: bool = True,
     self_num_epochs: int = 100,
     scalar_num_epochs: int = 400,
     tensor_num_epochs: int = 200,

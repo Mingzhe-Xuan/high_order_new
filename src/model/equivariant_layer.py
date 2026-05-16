@@ -268,13 +268,14 @@ class TpconvLayer(BaseEquivariantLayer):
             )
         else:
             atom_feature = aggregated_message
-        return atom_feature, None
+        return atom_feature, torch.zeros_like(atom_feature)
 
     def forward(
         self,
         atom_feature: torch.Tensor,
         edge_vector: torch.Tensor,
         edge_index: torch.Tensor,
+        edge_feature: Optional[torch.Tensor] = None,
     ):
         return self.tpconv_update(atom_feature, edge_vector, edge_index)
 

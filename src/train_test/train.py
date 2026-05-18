@@ -1,3 +1,4 @@
+import argparse
 import torch
 import torch.nn as nn
 import json
@@ -24,6 +25,7 @@ from src.model import (
     ReadoutLayer,
     Model,
 )
+from src.model.gmtnet import HighOrderGMTNet
 
 
 def _create_shared_components(
@@ -243,6 +245,13 @@ def _create_tensor_models(
     return models
 
 
+def _create_gmtnet_tensor_models(tensor_properties, **kwargs):
+    models = {}
+    for prop in tensor_properties:
+        models[prop] = HighOrderGMTNet(target=prop, args=argparse.Namespace(**kwargs))
+    return models
+
+
 def train(
     # # random seed
     # seed: int = 42,
@@ -312,6 +321,10 @@ def train(
     share_middle_mlp: bool = True,
     scalar_invariant_only: bool = True,
     only_use_embedding: bool = False,
+    model_type: str = "high_order",
+    gmtnet_embed_dim: int = 128,
+    gmtnet_num_attention_layers: int = 2,
+    use_tensorboard: bool = True,
 ):
     """
     1. self train: emb, inv, eqv, deco, readout - scalar train: emb, inv, deco - tensor train: emb, inv, eqv, deco, readout
@@ -391,6 +404,10 @@ def train(
     #     )
     ##################################################################################################
 
+    assert model_type in {"high_order", "gmtnet"}, f"model_type {model_type} is not implemented"
+    if model_type == "gmtnet" and (need_self_train or need_scalar_train):
+        raise NotImplementedError("model_type='gmtnet' currently supports tensor training only")
+
     # Create shared model components
     (
         embedding_layer,
@@ -445,6 +462,8 @@ def train(
         "weight_decay": weight_decay,
         "optimizer": optimizer,
         "scheduler": scheduler,
+        "model_type": model_type,
+        "use_tensorboard": use_tensorboard,
     }
     
     # Create a temporary middle_mlp and final_mlp for analysis
@@ -647,24 +666,60 @@ def train(
         scalar_models = None
 
     if need_tensor_train:
-        tensor_models = _create_tensor_models(
-            tensor_properties,
-            embedding_layer,
-            invariant_layers,
-            equivariant_layers,
-            irreps_list,
-            final_irreps_hidden,
-            final_irreps_out,
-            final_pooling,
-            scalar_dim,
-            vec_dim,
-            middle_scalar_hidden_dim,
-            num_middle_hidden_layers,
-            num_final_hidden_layers,
-        )
+        if model_type == "gmtnet":
+            tensor_models = _create_gmtnet_tensor_models(
+                tensor_properties,
+                use_mask=False,
+                gmtnet_embed_dim=gmtnet_embed_dim,
+                gmtnet_num_attention_layers=gmtnet_num_attention_layers,
+            )
+        else:
+            tensor_models = _create_tensor_models(
+                tensor_properties,
+                embedding_layer,
+                invariant_layers,
+                equivariant_layers,
+                irreps_list,
+                final_irreps_hidden,
+                final_irreps_out,
+                final_pooling,
+                scalar_dim,
+                vec_dim,
+                middle_scalar_hidden_dim,
+                num_middle_hidden_layers,
+                num_final_hidden_layers,
+            )
 
         for prop in tensor_properties:
-            if share_middle_mlp:
+            if model_type == "gmtnet":
+                trained_model, history = tensor_train(
+                    property_name=prop,
+                    embedding_layer=None,
+                    invariant_layers=None,
+                    middle_mlp=None,
+                    equivariant_layers=None,
+                    final_mlp=None,
+                    readout_layer=None,
+                    tensor_trainset=tensor_dataloaders[f"{prop}_trainset"],
+                    tensor_valset=tensor_dataloaders[f"{prop}_valset"],
+                    num_epochs=tensor_num_epochs,
+                    checkpoint_dir=checkpoint_dir,
+                    pic_dir=pic_dir,
+                    start_epoch=start_epoch,
+                    resume_from=resume_tensor_train,
+                    save_interval=save_interval,
+                    clip_grad_norm=clip_grad_norm,
+                    learning_rate=lr,
+                    weight_decay=weight_decay,
+                    optimizer=optimizer,
+                    scheduler=scheduler,
+                    loss_func=tensor_loss_func,
+                    limit=tensor_limit,
+                    use_amp=use_amp,
+                    model_instance=tensor_models[prop],
+                    use_tensorboard=use_tensorboard,
+                )
+            elif share_middle_mlp:
                 trained_model, history = tensor_train(
                     property_name=prop,
                     embedding_layer=embedding_layer,

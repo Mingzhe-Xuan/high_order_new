@@ -20,6 +20,14 @@ from src.train_test.utils.checkpoint import (
 from e3nn.o3 import Irreps, Linear
 
 
+def _predict_tensor_property(model, batch, device):
+    atom_type = batch.atom_type.to(device)
+    edge_index = batch.edge_index.to(device)
+    edge_vec = batch.edge_vec.to(device)
+    batch_index = batch.batch.to(device)
+    return model(atom_type, edge_vec, edge_index, batch_index)
+
+
 def validate_tensor_model(model, val_loader, device, loss_fn):
     """
     Validate the tensor model on the validation dataset.
@@ -38,14 +46,10 @@ def validate_tensor_model(model, val_loader, device, loss_fn):
     
     with torch.no_grad():
         for batch in val_loader:
-            atom_type = batch.atom_type.to(device)
-            edge_index = batch.edge_index.to(device)
-            edge_vec = batch.edge_vec.to(device)
-            batch_index = batch.batch.to(device)
             tensor_property = batch.tensor_property.to(device)
             property_dim = tuple(range(1, tensor_property.dim()))
 
-            pred_tensor_property = model(atom_type, edge_vec, edge_index, batch_index)
+            pred_tensor_property = _predict_tensor_property(model, batch, device)
             loss = loss_fn(pred_tensor_property, tensor_property)
             pointwise_mae = (
                 (pred_tensor_property - tensor_property).view(-1).abs().mean()
@@ -100,6 +104,8 @@ def tensor_train(
     loss_func: str = "huber",
     limit: int = None,
     use_amp: bool = True,
+    model_instance: nn.Module = None,
+    use_tensorboard: bool = True,
 ):
     """
     Train a tensor property prediction model with validation.
@@ -135,17 +141,22 @@ def tensor_train(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     tensorboard_dir = os.path.join(checkpoint_dir, "tensorboard", property_name)
-    os.makedirs(tensorboard_dir, exist_ok=True)
-    writer = SummaryWriter(tensorboard_dir)
-    
-    model = Model(
-        embedding_layer,
-        invariant_layers,
-        middle_mlp,
-        equivariant_layers,
-        final_mlp,
-        readout_layer,
-    )
+    writer = None
+    if use_tensorboard:
+        os.makedirs(tensorboard_dir, exist_ok=True)
+        writer = SummaryWriter(tensorboard_dir)
+
+    if model_instance is None:
+        model = Model(
+            embedding_layer,
+            invariant_layers,
+            middle_mlp,
+            equivariant_layers,
+            final_mlp,
+            readout_layer,
+        )
+    else:
+        model = model_instance
     model = model.to(device)
 
     best_loss = float("inf")
@@ -289,7 +300,7 @@ def tensor_train(
             
             if use_amp and device.type == "cuda":
                 with torch.cuda.amp.autocast():
-                    pred_tensor_property = model(atom_type, edge_vec, edge_index, batch_index)
+                    pred_tensor_property = _predict_tensor_property(model, batch, device)
                     loss = loss_fn(pred_tensor_property, tensor_property)
                 
                 if torch.isnan(loss):
@@ -304,7 +315,7 @@ def tensor_train(
                 scaler.step(optimizer)
                 scaler.update()
             else:
-                pred_tensor_property = model(atom_type, edge_vec, edge_index, batch_index)
+                pred_tensor_property = _predict_tensor_property(model, batch, device)
                 loss = loss_fn(pred_tensor_property, tensor_property)
                 
                 if torch.isnan(loss):
@@ -368,17 +379,18 @@ def tensor_train(
         
         scheduler.step()
 
-        writer.add_scalar("Loss/train", avg_loss, epoch)
-        writer.add_scalar("MAE/train", avg_mae, epoch)
-        writer.add_scalar("Pointwise_MAE/train", avg_pointwise_mae, epoch)
-        writer.add_scalar("MSE/train", avg_mse, epoch)
-        writer.add_scalar("FNorm_Percent_Error/train", avg_fnorm_err, epoch)
-        writer.add_scalar("Loss/val", val_loss, epoch)
-        writer.add_scalar("MAE/val", val_avg_mae, epoch)
-        writer.add_scalar("Pointwise_MAE/val", val_p_mae, epoch)
-        writer.add_scalar("MSE/val", val_mse, epoch)
-        writer.add_scalar("FNorm_Percent_Error/val", val_fnorm_err, epoch)
-        writer.add_scalar("Learning_Rate", scheduler.get_last_lr()[0], epoch)
+        if writer is not None:
+            writer.add_scalar("Loss/train", avg_loss, epoch)
+            writer.add_scalar("MAE/train", avg_mae, epoch)
+            writer.add_scalar("Pointwise_MAE/train", avg_pointwise_mae, epoch)
+            writer.add_scalar("MSE/train", avg_mse, epoch)
+            writer.add_scalar("FNorm_Percent_Error/train", avg_fnorm_err, epoch)
+            writer.add_scalar("Loss/val", val_loss, epoch)
+            writer.add_scalar("MAE/val", val_avg_mae, epoch)
+            writer.add_scalar("Pointwise_MAE/val", val_p_mae, epoch)
+            writer.add_scalar("MSE/val", val_mse, epoch)
+            writer.add_scalar("FNorm_Percent_Error/val", val_fnorm_err, epoch)
+            writer.add_scalar("Learning_Rate", scheduler.get_last_lr()[0], epoch)
 
         print(
             f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_loss:.6f}, Train MAE: {avg_mae:.6f}, "
@@ -437,8 +449,9 @@ def tensor_train(
 
     print(f"Training completed. Best val loss: {best_loss:.6f}")
     
-    writer.close()
-    
+    if writer is not None:
+        writer.close()
+
     vis_dir = get_visualization_dir(pic_dir)
     property_vis_dir = os.path.join(vis_dir, property_name)
     

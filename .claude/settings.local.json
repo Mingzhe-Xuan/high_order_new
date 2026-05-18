@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(command -v codex)",
+      "Bash(codex --version)",
+      "Bash(python *)"
+    ]
+  }
+}

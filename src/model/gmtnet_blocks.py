@@ -199,6 +199,97 @@ class ComformerConvEqui(nn.Module):
         return self.nlayer_3(node_feature, edge_index, edge_feature, edge_irr)
 
 
+class GMTNetForceTensorProductHead(nn.Module):
+    def __init__(
+        self,
+        node_irreps,
+        edge_dim: int,
+        sh_irreps: str = "1x0e + 1x1o + 1x2e",
+        reduce: str = "mean",
+    ):
+        super().__init__()
+        self.sh = sh_irreps
+        self.reduce = reduce
+        self.tp = o3.FullyConnectedTensorProduct(
+            node_irreps,
+            self.sh,
+            "1x1o",
+            shared_weights=False,
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(edge_dim, edge_dim),
+            nn.Softplus(),
+            nn.Linear(edge_dim, self.tp.weight_numel),
+        )
+
+    def forward(self, node_features, edge_vec, edge_index, edge_features):
+        edge_src, edge_dst = edge_index
+        edge_sh = o3.spherical_harmonics(
+            self.sh,
+            edge_vec,
+            normalize=True,
+            normalization="component",
+        )
+        messages = self.tp(node_features[edge_dst], edge_sh, self.fc(edge_features))
+        return scatter(
+            messages,
+            edge_src,
+            dim=0,
+            dim_size=node_features.shape[0],
+            reduce=self.reduce,
+        )
+
+
+class GMTNetScalarTensorProductHead(nn.Module):
+    def __init__(
+        self,
+        node_irreps,
+        edge_dim: int,
+        scalar_channels: int = 16,
+        sh_irreps: str = "1x0e + 1x1o + 1x2e",
+        reduce: str = "mean",
+    ):
+        super().__init__()
+        self.sh = sh_irreps
+        self.reduce = reduce
+        scalar_irreps = f"{scalar_channels}x0e"
+        self.tp = o3.FullyConnectedTensorProduct(
+            node_irreps,
+            self.sh,
+            scalar_irreps,
+            shared_weights=False,
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(edge_dim, edge_dim),
+            nn.Softplus(),
+            nn.Linear(edge_dim, self.tp.weight_numel),
+        )
+        self.mlp = nn.Sequential(
+            nn.Linear(scalar_channels, edge_dim),
+            nn.SiLU(),
+            nn.Linear(edge_dim, 1),
+        )
+
+    def forward(self, node_features, edge_vec, edge_index, edge_features, batch_index):
+        edge_src, edge_dst = edge_index
+        edge_sh = o3.spherical_harmonics(
+            self.sh,
+            edge_vec,
+            normalize=True,
+            normalization="component",
+        )
+        messages = self.tp(node_features[edge_dst], edge_sh, self.fc(edge_features))
+        node_scalars = scatter(
+            messages,
+            edge_src,
+            dim=0,
+            dim_size=node_features.shape[0],
+            reduce=self.reduce,
+        )
+        graph_scalars = scatter(node_scalars, batch_index, dim=0, reduce="mean")
+        return self.mlp(graph_scalars).squeeze(-1)
+
+
 class GradientBlock(nn.Module):
     def __init__(self):
         super().__init__()

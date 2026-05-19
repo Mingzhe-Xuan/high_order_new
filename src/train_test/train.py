@@ -248,8 +248,30 @@ def _create_tensor_models(
 def _create_gmtnet_tensor_models(tensor_properties, **kwargs):
     models = {}
     for prop in tensor_properties:
-        models[prop] = HighOrderGMTNet(target=prop, args=argparse.Namespace(**kwargs))
+        models[prop] = HighOrderGMTNet(
+            target=prop,
+            args=argparse.Namespace(**kwargs),
+            task_mode="tensor",
+        )
     return models
+
+
+def _create_gmtnet_scalar_models(scalar_properties, **kwargs):
+    models = {}
+    for prop in scalar_properties:
+        models[prop] = HighOrderGMTNet(
+            target=prop,
+            args=argparse.Namespace(**kwargs),
+            task_mode="scalar",
+        )
+    return models
+
+
+def _create_gmtnet_force_model(**kwargs):
+    return HighOrderGMTNet(
+        args=argparse.Namespace(**kwargs),
+        task_mode="force",
+    )
 
 
 def train(
@@ -405,8 +427,6 @@ def train(
     ##################################################################################################
 
     assert model_type in {"high_order", "gmtnet"}, f"model_type {model_type} is not implemented"
-    if model_type == "gmtnet" and (need_self_train or need_scalar_train):
-        raise NotImplementedError("model_type='gmtnet' currently supports tensor training only")
 
     # Create shared model components
     (
@@ -517,92 +537,147 @@ def train(
     tensor_train_history = {}
 
     if need_self_train:
-        self_middle_mlp = MiddleMLP(
-            scalar_dim_in=embed_dim,
-            scalar_dim_hidden=middle_scalar_hidden_dim,
-            scalar_dim_out=scalar_dim,
-            num_hidden_layers=num_middle_hidden_layers,
-        )
-        self_final_mlp = FinalMLP(
-            irreps_in=Irreps(irreps_list[-1]),
-            irreps_hidden=final_irreps_hidden,
-            irreps_out=final_irreps_out,
-            num_hidden_layers=num_final_hidden_layers,
-        )
-        self_readout_layer = ReadoutLayer(
-            l_max=1,
-            symmetry=None,
-            irreps_out=final_irreps_out,
-        )
-        self_model = Model(
-            embedding_layer=embedding_layer,
-            invariant_layers=invariant_layers,
-            equivariant_layers=equivariant_layers,
-            middle_mlp=self_middle_mlp,
-            final_mlp=self_final_mlp,
-            readout_layer=self_readout_layer,
-            self_train=True,
-            final_pooling=final_pooling,
-            irreps_list=irreps_list,
-        )
+        if model_type == "gmtnet":
+            gmtnet_force_model = _create_gmtnet_force_model(
+                gmtnet_embed_dim=gmtnet_embed_dim,
+                gmtnet_num_attention_layers=gmtnet_num_attention_layers,
+            )
+            self_trained_model = self_train(
+                embedding_layer=None,
+                invariant_layers=None,
+                middle_mlp=None,
+                equivariant_layers=None,
+                final_mlp=None,
+                readout_layer=None,
+                dataloader=self_trainset,
+                num_epochs=self_num_epochs,
+                checkpoint_dir=checkpoint_dir,
+                pic_dir=pic_dir,
+                start_epoch=start_epoch,
+                resume_from=resume_self_train,
+                save_interval=save_interval,
+                batch_save_interval=batch_save_interval,
+                clip_grad_norm=clip_grad_norm,
+                loss_func=self_loss_func,
+                learning_rate=lr,
+                weight_decay=weight_decay,
+                optimizer=optimizer,
+                scheduler=scheduler,
+                warmup_periods=warmup_periods,
+                limit=self_limit,
+                use_amp=use_amp,
+                model_instance=gmtnet_force_model,
+            )
+        else:
+            self_middle_mlp = MiddleMLP(
+                scalar_dim_in=embed_dim,
+                scalar_dim_hidden=middle_scalar_hidden_dim,
+                scalar_dim_out=scalar_dim,
+                num_hidden_layers=num_middle_hidden_layers,
+            )
+            self_final_mlp = FinalMLP(
+                irreps_in=Irreps(irreps_list[-1]),
+                irreps_hidden=final_irreps_hidden,
+                irreps_out=final_irreps_out,
+                num_hidden_layers=num_final_hidden_layers,
+            )
+            self_readout_layer = ReadoutLayer(
+                l_max=1,
+                symmetry=None,
+                irreps_out=final_irreps_out,
+            )
 
-        self_trained_model = self_train(
-            embedding_layer=embedding_layer,
-            invariant_layers=invariant_layers,
-            middle_mlp=self_middle_mlp,
-            equivariant_layers=equivariant_layers,
-            final_mlp=self_final_mlp,
-            readout_layer=self_readout_layer,
-            dataloader=self_trainset,
-            num_epochs=self_num_epochs,
-            checkpoint_dir=checkpoint_dir,
-            pic_dir=pic_dir,
-            start_epoch=start_epoch,
-            resume_from=resume_self_train,
-            save_interval=save_interval,
-            batch_save_interval=batch_save_interval,
-            clip_grad_norm=clip_grad_norm,
-            loss_func=self_loss_func,
-            learning_rate=lr,
-            weight_decay=weight_decay,
-            optimizer=optimizer,
-            scheduler=scheduler,
-            warmup_periods=warmup_periods,
-            limit=self_limit,
-            use_amp=use_amp,
-        )
-        
-        embedding_layer = self_trained_model.embedding_layer
-        if not only_use_embedding:
-            invariant_layers = self_trained_model.invariant_layers
-            middle_mlp = self_trained_model.middle_mlp
-            equivariant_layers = self_trained_model.equivariant_layers
+            self_trained_model = self_train(
+                embedding_layer=embedding_layer,
+                invariant_layers=invariant_layers,
+                middle_mlp=self_middle_mlp,
+                equivariant_layers=equivariant_layers,
+                final_mlp=self_final_mlp,
+                readout_layer=self_readout_layer,
+                dataloader=self_trainset,
+                num_epochs=self_num_epochs,
+                checkpoint_dir=checkpoint_dir,
+                pic_dir=pic_dir,
+                start_epoch=start_epoch,
+                resume_from=resume_self_train,
+                save_interval=save_interval,
+                batch_save_interval=batch_save_interval,
+                clip_grad_norm=clip_grad_norm,
+                loss_func=self_loss_func,
+                learning_rate=lr,
+                weight_decay=weight_decay,
+                optimizer=optimizer,
+                scheduler=scheduler,
+                warmup_periods=warmup_periods,
+                limit=self_limit,
+                use_amp=use_amp,
+            )
 
-        if freeze:
-            embedding_layer = freeze_parameters(embedding_layer)
-            invariant_layers = freeze_parameters(invariant_layers)
-            middle_mlp = freeze_parameters(middle_mlp)
-            equivariant_layers = freeze_parameters(equivariant_layers)
+            embedding_layer = self_trained_model.embedding_layer
+            if not only_use_embedding:
+                invariant_layers = self_trained_model.invariant_layers
+                middle_mlp = self_trained_model.middle_mlp
+                equivariant_layers = self_trained_model.equivariant_layers
+
+            if freeze:
+                embedding_layer = freeze_parameters(embedding_layer)
+                invariant_layers = freeze_parameters(invariant_layers)
+                middle_mlp = freeze_parameters(middle_mlp)
+                equivariant_layers = freeze_parameters(equivariant_layers)
 
     if need_scalar_train:
-        scalar_models = _create_scalar_models(
-            scalar_properties,
-            embedding_layer,
-            invariant_layers,
-            equivariant_layers,
-            irreps_list,
-            final_irreps_hidden,
-            final_irreps_out,
-            final_pooling,
-            embed_dim,
-            scalar_dim,
-            middle_scalar_hidden_dim,
-            num_middle_hidden_layers,
-            num_final_hidden_layers,
-        )
+        if model_type == "gmtnet":
+            scalar_models = _create_gmtnet_scalar_models(
+                scalar_properties,
+                gmtnet_embed_dim=gmtnet_embed_dim,
+                gmtnet_num_attention_layers=gmtnet_num_attention_layers,
+            )
+        else:
+            scalar_models = _create_scalar_models(
+                scalar_properties,
+                embedding_layer,
+                invariant_layers,
+                equivariant_layers,
+                irreps_list,
+                final_irreps_hidden,
+                final_irreps_out,
+                final_pooling,
+                embed_dim,
+                scalar_dim,
+                middle_scalar_hidden_dim,
+                num_middle_hidden_layers,
+                num_final_hidden_layers,
+            )
 
         for prop in scalar_properties:
-            if share_middle_mlp:
+            if model_type == "gmtnet":
+                trained_model, history = scalar_train(
+                    property_name=prop,
+                    embedding_layer=None,
+                    invariant_layers=None,
+                    middle_mlp=None,
+                    equivariant_layers=None,
+                    final_mlp=None,
+                    readout_layer=None,
+                    scalar_trainset=scalar_dataloaders[f"{prop}_trainset"],
+                    scalar_valset=scalar_dataloaders[f"{prop}_valset"],
+                    num_epochs=scalar_num_epochs,
+                    checkpoint_dir=checkpoint_dir,
+                    pic_dir=pic_dir,
+                    start_epoch=start_epoch,
+                    resume_from=resume_scalar_train,
+                    save_interval=save_interval,
+                    clip_grad_norm=clip_grad_norm,
+                    learning_rate=lr,
+                    weight_decay=weight_decay,
+                    optimizer=optimizer,
+                    scheduler=scheduler,
+                    loss_func=scalar_loss_func,
+                    limit=scalar_limit,
+                    use_amp=use_amp,
+                    model_instance=scalar_models[prop],
+                )
+            elif share_middle_mlp:
                 trained_model, history = scalar_train(
                     property_name=prop,
                     embedding_layer=embedding_layer,

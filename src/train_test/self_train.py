@@ -46,6 +46,7 @@ def self_train(
     warmup_periods: int = 10,
     limit: int = None,
     use_amp: bool = True,
+    model_instance=None,
 ):
     """
     Self-supervised training for the model using force prediction.
@@ -83,15 +84,18 @@ def self_train(
     os.makedirs(tensorboard_dir, exist_ok=True)
     writer = SummaryWriter(tensorboard_dir)
     
-    model = Model(
-        embedding_layer,
-        invariant_layers,
-        middle_mlp,
-        equivariant_layers,
-        final_mlp,
-        readout_layer,
-        self_train=True,
-    )
+    if model_instance is None:
+        model = Model(
+            embedding_layer,
+            invariant_layers,
+            middle_mlp,
+            equivariant_layers,
+            final_mlp,
+            readout_layer,
+            self_train=True,
+        )
+    else:
+        model = model_instance
     model = model.to(device)
 
     best_loss = float("inf")

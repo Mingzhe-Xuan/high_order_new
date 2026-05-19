@@ -79,6 +79,7 @@ def scalar_train(
     limit: int = None,
     use_amp: bool = True,
     scalar_invariant_only: bool = True,
+    model_instance=None,
 ):
     """
     Train a scalar property prediction model with validation.
@@ -117,7 +118,9 @@ def scalar_train(
     os.makedirs(tensorboard_dir, exist_ok=True)
     writer = SummaryWriter(tensorboard_dir)
     
-    if scalar_invariant_only:
+    if model_instance is not None:
+        model = model_instance
+    elif scalar_invariant_only:
         model = InvariantOnlyModel(
             embedding_layer,
             invariant_layers,

@@ -336,7 +336,7 @@ def tensor_train(
             fnorm_error = torch.norm(
                 pred_tensor_property - tensor_property, dim=property_dim
             )
-            fnorm = torch.norm(tensor_property, dim=-1)
+            fnorm = torch.norm(tensor_property, dim=property_dim)
             mean_fnorm = fnorm.mean()
             mean_fnorm_percent_error = (fnorm_error / (fnorm + 1e-8)).mean()
 

@@ -6,21 +6,33 @@ import os
 from tqdm import tqdm
 
 from .alexandria_db_reader import AlexandriaDatabase
+from .tensor_dataset import get_gmtnet_neighbor_list, get_neighbor_list
 
 
 class AlexandriaDataset(Dataset):
     # Only structure information is used in this dataset.
-    def __init__(self, db_path: str, cutoff: float):
+    def __init__(
+        self,
+        db_path: str,
+        cutoff: float,
+        graph_mode: str = "high_order",
+        max_neighbors: int = 12,
+    ):
         self.db_path = db_path
         self.cutoff = cutoff
+        self.graph_mode = graph_mode
+        self.max_neighbors = max_neighbors
         # Cache edge_index and edge_vec to avoid repeated neighbor list calculation
         self.neighbor_list_path = os.path.join(
             os.path.dirname(self.db_path),
             "neighbor_list",
         )
+        cache_name = f"alexandria_neighbor_list_{self.graph_mode}_cutoff_{self.cutoff:.2f}"
+        if self.graph_mode == "gmtnet":
+            cache_name += f"_max_neighbors_{self.max_neighbors}"
         self.neighbor_list_filename = os.path.join(
             self.neighbor_list_path,
-            f"alexandria_neighbor_list_cutoff_{self.cutoff:.2f}.pt",
+            f"{cache_name}.pt",
         )
         os.makedirs(self.neighbor_list_path, exist_ok=True)
         if not os.path.exists(self.neighbor_list_filename):
@@ -32,18 +44,21 @@ class AlexandriaDataset(Dataset):
                     if structure is None:
                         self.cached_neighbor_data.append(None)
                         continue
-                    # Get neighbor list with images for PBC correction
-                    neighbor_list = structure.get_neighbor_list(self.cutoff)
-                    # Format: (center_indices, site_indices, images, distances)
-                    edge_index = torch.tensor(
-                        np.array(neighbor_list[:2]),
-                        dtype=torch.long,
-                    )
-                    images = torch.tensor(
-                        neighbor_list[2],
-                        dtype=torch.float32,
-                    )
-                    self.cached_neighbor_data.append((edge_index, images))
+                    atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)
+                    lattice_mat = structure.lattice.matrix
+                    if self.graph_mode == "gmtnet":
+                        edge_index, edge_vec = get_gmtnet_neighbor_list(
+                            structure,
+                            self.cutoff,
+                            self.max_neighbors,
+                        )
+                    else:
+                        edge_index, edge_vec = get_neighbor_list(
+                            atom_coords,
+                            self.cutoff,
+                            lattice_mat,
+                        )
+                    self.cached_neighbor_data.append((edge_index, edge_vec))
             torch.save(
                 self.cached_neighbor_data,
                 self.neighbor_list_filename,
@@ -77,23 +92,13 @@ class AlexandriaDataset(Dataset):
             lattice_mat = structure.lattice.matrix
             
             # Get cached neighbor data
-            edge_index, images = self.cached_neighbor_data[idx]
-            src, dst = edge_index
-            edge_vec = atom_coords[dst] - atom_coords[src]
-            
-            # # Calculate edge vectors considering periodic boundary conditions
-            # src, dst = edge_index
-            # pos_src = atom_coords[src]
-            # pos_dst = atom_coords[dst]
-            
-            # # Apply periodic boundary correction using images
-            # # images shape: (num_edges, 3), lattice_mat shape: (3, 3)
-            # edge_vec = (pos_dst + images @ torch.tensor(lattice_mat, dtype=torch.float32)) - pos_src
+            edge_index, edge_vec = self.cached_neighbor_data[idx]
 
             # Perturbate the coordinates
             unstable_atom_coords = atom_coords + torch.randn_like(atom_coords)
             src, dst = edge_index
-            unstable_edge_vec = unstable_atom_coords[dst] - unstable_atom_coords[src]
+            delta = unstable_atom_coords - atom_coords
+            unstable_edge_vec = edge_vec + delta[dst] - delta[src]
             # no batch dimension because num_atoms varies between structures
             force = (unstable_atom_coords - atom_coords)
 

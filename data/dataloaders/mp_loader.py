@@ -12,9 +12,11 @@ def get_mp_dataloader(
     num_workers: int = 0,
     shuffle: bool = True,
     worker_init_fn = None,
+    graph_mode: str = "high_order",
+    max_neighbors: int = 12,
 ) -> DataLoader:
     db_path = name_path_dict["mp"]
-    dataset = MPDataset(db_path, cutoff)
+    dataset = MPDataset(db_path, cutoff, graph_mode=graph_mode, max_neighbors=max_neighbors)
     return DataLoader(
         dataset, 
         batch_size=batch_size, 

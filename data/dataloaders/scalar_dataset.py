@@ -6,11 +6,22 @@ from torch_geometric.data import Data, Dataset
 import os
 from tqdm import tqdm
 
+from .tensor_dataset import get_gmtnet_neighbor_list, get_neighbor_list
+
 
 class ScalarDataset(Dataset):
-    def __init__(self, path: str, property_name: str, cutoff: float):
+    def __init__(
+        self,
+        path: str,
+        property_name: str,
+        cutoff: float,
+        graph_mode: str = "high_order",
+        max_neighbors: int = 12,
+    ):
         self.property_name = property_name
         self.cutoff = cutoff
+        self.graph_mode = graph_mode
+        self.max_neighbors = max_neighbors
         with open(path, "rb") as f:
             self.data: List[Dict[str, Any]] = pkl.load(f)
 
@@ -25,9 +36,12 @@ class ScalarDataset(Dataset):
             os.path.dirname(path),
             "neighbor_list",
         )
+        cache_name = f"{self.property_name}_neighbor_list_{self.graph_mode}_cutoff_{self.cutoff:.2f}"
+        if self.graph_mode == "gmtnet":
+            cache_name += f"_max_neighbors_{self.max_neighbors}"
         self.neighbor_list_filename = os.path.join(
             self.neighbor_list_path,
-            f"{self.property_name}_neighbor_list_cutoff_{self.cutoff:.2f}.pt",
+            f"{cache_name}.pt",
         )
         os.makedirs(self.neighbor_list_path, exist_ok=True)
         
@@ -36,18 +50,21 @@ class ScalarDataset(Dataset):
             self.cached_neighbor_data = []
             for i in tqdm(range(len(self.data))):
                 structure = self.data[i]["structure"]
-                # Get neighbor list with images for PBC correction
-                neighbor_list = structure.get_neighbor_list(self.cutoff)
-                # Format: (center_indices, site_indices, images, distances)
-                edge_index = torch.tensor(
-                    np.array(neighbor_list[:2]),
-                    dtype=torch.long,
-                )
-                images = torch.tensor(
-                    neighbor_list[2],
-                    dtype=torch.float32,
-                )
-                self.cached_neighbor_data.append((edge_index, images))
+                atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)
+                lattice_mat = structure.lattice.matrix
+                if self.graph_mode == "gmtnet":
+                    edge_index, edge_vec = get_gmtnet_neighbor_list(
+                        structure,
+                        self.cutoff,
+                        self.max_neighbors,
+                    )
+                else:
+                    edge_index, edge_vec = get_neighbor_list(
+                        atom_coords,
+                        self.cutoff,
+                        lattice_mat,
+                    )
+                self.cached_neighbor_data.append((edge_index, edge_vec))
             
             # Save with error handling
             try:
@@ -73,8 +90,8 @@ class ScalarDataset(Dataset):
                 else:
                     # Validate first entry
                     if len(self.cached_neighbor_data) > 0:
-                        edge_index, images = self.cached_neighbor_data[0]
-                        if not isinstance(edge_index, torch.Tensor) or not isinstance(images, torch.Tensor):
+                        edge_index, edge_vec = self.cached_neighbor_data[0]
+                        if not isinstance(edge_index, torch.Tensor) or not isinstance(edge_vec, torch.Tensor):
                             print("Warning: Invalid cache format. Regenerating...")
                             self._regenerate_cache()
             except Exception as e:
@@ -88,18 +105,21 @@ class ScalarDataset(Dataset):
         self.cached_neighbor_data = []
         for i in tqdm(range(len(self.data))):
             structure = self.data[i]["structure"]
-            # Get neighbor list with images for PBC correction
-            neighbor_list = structure.get_neighbor_list(self.cutoff)
-            # Format: (center_indices, site_indices, images, distances)
-            edge_index = torch.tensor(
-                np.array(neighbor_list[:2]),
-                dtype=torch.long,
-            )
-            images = torch.tensor(
-                neighbor_list[2],
-                dtype=torch.float32,
-            )
-            self.cached_neighbor_data.append((edge_index, images))
+            atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)
+            lattice_mat = structure.lattice.matrix
+            if self.graph_mode == "gmtnet":
+                edge_index, edge_vec = get_gmtnet_neighbor_list(
+                    structure,
+                    self.cutoff,
+                    self.max_neighbors,
+                )
+            else:
+                edge_index, edge_vec = get_neighbor_list(
+                    atom_coords,
+                    self.cutoff,
+                    lattice_mat,
+                )
+            self.cached_neighbor_data.append((edge_index, edge_vec))
         
         # Save the regenerated cache
         torch.save(self.cached_neighbor_data, self.neighbor_list_filename)
@@ -130,16 +150,7 @@ class ScalarDataset(Dataset):
         lattice_mat = structure.lattice.matrix
         
         # Get cached neighbor data
-        edge_index, images = self.cached_neighbor_data[idx]
-        
-        # Calculate edge vectors considering periodic boundary conditions
-        src, dst = edge_index
-        pos_src = atom_coords[src]
-        pos_dst = atom_coords[dst]
-        
-        # Apply periodic boundary correction using images
-        # images shape: (num_edges, 3), lattice_mat shape: (3, 3)
-        edge_vec = (pos_dst + images @ torch.tensor(lattice_mat, dtype=torch.float32)) - pos_src
+        edge_index, edge_vec = self.cached_neighbor_data[idx]
         
         # scalar_property: float
         scalar_property = torch.tensor(

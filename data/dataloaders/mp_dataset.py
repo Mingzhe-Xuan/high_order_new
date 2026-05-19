@@ -8,11 +8,57 @@ from tqdm import tqdm
 from .materials_db_reader import MaterialsProjectDatabase
 
 
+def get_ase_gmtnet_neighbor_list(atoms, cutoff: float, max_neighbors: int = 12):
+    current_cutoff = cutoff
+    while True:
+        src, dst, displacement = neighbor_list("ijD", atoms, current_cutoff)
+        counts = np.bincount(src, minlength=len(atoms))
+        if len(atoms) == 0 or counts.min() >= max_neighbors:
+            break
+        cell_lengths = atoms.cell.lengths()
+        next_cutoff = max(cell_lengths) if current_cutoff < max(cell_lengths) else 2 * current_cutoff
+        current_cutoff = next_cutoff
+
+    src_nodes = []
+    dst_nodes = []
+    edge_vecs = []
+    for atom_idx in range(len(atoms)):
+        edge_ids = np.where(src == atom_idx)[0]
+        if len(edge_ids) == 0:
+            continue
+        distances = np.linalg.norm(displacement[edge_ids], axis=1)
+        order = np.argsort(distances)
+        edge_ids = edge_ids[order]
+        distances = distances[order]
+        max_dist = distances[min(max_neighbors, len(distances)) - 1]
+        selected = edge_ids[distances <= max_dist]
+        src_nodes.extend(src[selected].tolist())
+        dst_nodes.extend(dst[selected].tolist())
+        edge_vecs.extend(displacement[selected].tolist())
+
+    if len(src_nodes) == 0:
+        edge_index = torch.empty((2, 0), dtype=torch.long)
+        edge_vec = torch.empty((0, 3), dtype=torch.float32)
+    else:
+        edge_index = torch.tensor([src_nodes, dst_nodes], dtype=torch.long)
+        edge_vec = torch.tensor(np.array(edge_vecs), dtype=torch.float32).reshape(-1, 3)
+    return edge_index, edge_vec
+
+
 class MPDataset(Dataset):
     # Only structure information is used in this dataset.
-    def __init__(self, db_path: str, cutoff: float, num_perturb: int = 1):
+    def __init__(
+        self,
+        db_path: str,
+        cutoff: float,
+        num_perturb: int = 1,
+        graph_mode: str = "high_order",
+        max_neighbors: int = 12,
+    ):
         self.db_path = db_path
         self.cutoff = cutoff
+        self.graph_mode = graph_mode
+        self.max_neighbors = max_neighbors
         # Deprecated parameter, do no use
         self.num_perturb = num_perturb
         # Cache edge_index and edge_vec to avoid repeated neighbor list calculation
@@ -20,9 +66,12 @@ class MPDataset(Dataset):
             os.path.dirname(self.db_path),
             "neighbor_list",
         )
+        cache_name = f"mp_neighbor_list_{self.graph_mode}_cutoff_{self.cutoff:.2f}"
+        if self.graph_mode == "gmtnet":
+            cache_name += f"_max_neighbors_{self.max_neighbors}"
         self.neighbor_list_filename = os.path.join(
             self.neighbor_list_path,
-            f"mp_neighbor_list_cutoff_{self.cutoff:.2f}.pt",
+            f"{cache_name}.pt",
         )
         os.makedirs(self.neighbor_list_path, exist_ok=True)
         if not os.path.exists(self.neighbor_list_filename):
@@ -34,18 +83,22 @@ class MPDataset(Dataset):
                     if atoms is None:
                         self.cached_neighbor_data.append(None)
                         continue
-                    # Use 'ijd' format to get source, destination, and displacement vectors
-                    # The displacement vectors already account for periodic boundary conditions
-                    neighbor_result = neighbor_list("ijD", atoms, self.cutoff)
-                    src, dst, displacement = neighbor_result
-                    edge_index = torch.tensor(
-                        np.array([src, dst]),
-                        dtype=torch.long,
-                    )
-                    edge_vec = torch.tensor(
-                        displacement,
-                        dtype=torch.float32,
-                    ).reshape(-1, 3)
+                    if self.graph_mode == "gmtnet":
+                        edge_index, edge_vec = get_ase_gmtnet_neighbor_list(
+                            atoms,
+                            self.cutoff,
+                            self.max_neighbors,
+                        )
+                    else:
+                        src, dst, displacement = neighbor_list("ijD", atoms, self.cutoff)
+                        edge_index = torch.tensor(
+                            np.array([src, dst]),
+                            dtype=torch.long,
+                        )
+                        edge_vec = torch.tensor(
+                            displacement,
+                            dtype=torch.float32,
+                        ).reshape(-1, 3)
                     self.cached_neighbor_data.append((edge_index, edge_vec))
             torch.save(
                 self.cached_neighbor_data,
@@ -83,7 +136,8 @@ class MPDataset(Dataset):
             # Perturbate the coordinates
             unstable_atom_coords = atom_coords + torch.randn_like(atom_coords)
             src, dst = edge_index
-            unstable_edge_vec = unstable_atom_coords[dst] - unstable_atom_coords[src]
+            delta = unstable_atom_coords - atom_coords
+            unstable_edge_vec = edge_vec + delta[dst] - delta[src]
             # no batch dimension because num_atoms varies between structures
             force = (unstable_atom_coords - atom_coords)
 

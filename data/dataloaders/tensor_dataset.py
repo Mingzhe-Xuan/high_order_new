@@ -284,8 +284,14 @@ class TensorDataset(Dataset):
                     atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)
                     lattice_mat = structure.lattice.matrix
                     
-                    # Calculate edge_index and edge_vec considering PBC
-                    edge_index, edge_vec = get_neighbor_list(atom_coords, self.cutoff, lattice_mat)
+                    if self.graph_mode == "gmtnet":
+                        edge_index, edge_vec = get_gmtnet_neighbor_list(
+                            structure,
+                            self.cutoff,
+                            self.max_neighbors,
+                        )
+                    else:
+                        edge_index, edge_vec = get_neighbor_list(atom_coords, self.cutoff, lattice_mat)
                     
                     self.cached_neighbor_data.append((edge_index, edge_vec))
                 torch.save(self.cached_neighbor_data, self.neighbor_list_filename)

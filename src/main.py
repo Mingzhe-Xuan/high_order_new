@@ -80,6 +80,8 @@ def _create_scalar_dataloaders(
     pin_memory,
     num_workers,
     worker_init_fn=None,
+    graph_mode="high_order",
+    max_neighbors=12,
 ):
     """Create dataloaders for scalar properties."""
     dataloaders = {}
@@ -97,6 +99,8 @@ def _create_scalar_dataloaders(
             num_workers=num_workers,
             shuffle=True,
             worker_init_fn=worker_init_fn,
+            graph_mode=graph_mode,
+            max_neighbors=max_neighbors,
         )
         dataloaders[f"{prop}_trainset"] = trainset
         dataloaders[f"{prop}_valset"] = valset
@@ -429,6 +433,8 @@ def main(
                 num_workers=num_workers,
                 shuffle=True,
                 worker_init_fn=lambda worker_id: worker_init_fn(worker_id, seed) if num_workers > 0 else None,
+                graph_mode=graph_mode,
+                max_neighbors=max_neighbors,
             )
             batch_save_interval = None
         if USE_ALEX:
@@ -439,6 +445,8 @@ def main(
                 num_workers=num_workers,
                 shuffle=True,
                 worker_init_fn=lambda worker_id: worker_init_fn(worker_id, seed) if num_workers > 0 else None,
+                graph_mode=graph_mode,
+                max_neighbors=max_neighbors,
             )
             batch_save_interval = 10000
     else:
@@ -457,6 +465,8 @@ def main(
             pin_memory,
             num_workers,
             worker_init_fn=lambda worker_id: worker_init_fn(worker_id, seed) if num_workers > 0 else None,
+            graph_mode=graph_mode,
+            max_neighbors=max_neighbors,
         )
     else:
         scalar_dataloaders = None

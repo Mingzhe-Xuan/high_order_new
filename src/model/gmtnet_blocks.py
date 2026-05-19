@@ -212,24 +212,25 @@ class GradientBlock(nn.Module):
         self.constant_w = nn.Parameter(torch.ones(self.tp.weight_numel), requires_grad=False)
 
     def forward(self, node_feature):
-        bs = node_feature.shape[0]
-        outer_e = torch.ones(bs, 3, device=node_feature.device, requires_grad=True)
-        e_feature = o3.spherical_harmonics(self.sh, outer_e, normalize=False)
-        d_feature = self.tp(node_feature, e_feature, self.constant_w.to(node_feature.device))
-        dielectric = []
-        for i in range(3):
-            grad_outputs = torch.zeros(bs, 3, device=node_feature.device)
-            grad_outputs[:, i] = 1.0
-            dielectric.append(
-                grad(
-                    d_feature,
-                    outer_e,
-                    grad_outputs=grad_outputs,
-                    create_graph=True,
-                    retain_graph=True,
-                )[0]
-            )
-        return torch.stack(dielectric).transpose(0, 1)
+        with torch.enable_grad():
+            bs = node_feature.shape[0]
+            outer_e = torch.ones(bs, 3, device=node_feature.device, requires_grad=True)
+            e_feature = o3.spherical_harmonics(self.sh, outer_e, normalize=False)
+            d_feature = self.tp(node_feature, e_feature, self.constant_w.to(node_feature.device))
+            dielectric = []
+            for i in range(3):
+                grad_outputs = torch.zeros(bs, 3, device=node_feature.device)
+                grad_outputs[:, i] = 1.0
+                dielectric.append(
+                    grad(
+                        d_feature,
+                        outer_e,
+                        grad_outputs=grad_outputs,
+                        create_graph=True,
+                        retain_graph=True,
+                    )[0]
+                )
+            return torch.stack(dielectric).transpose(0, 1)
 
 
 class PiezoBlock(nn.Module):
@@ -247,24 +248,25 @@ class PiezoBlock(nn.Module):
         self.idx = [0, 4, 8, 1, 5, 6]
 
     def forward(self, node_feature):
-        bs = node_feature.shape[0]
-        outer_s = torch.ones(bs, 3, 3, device=node_feature.device, requires_grad=True)
-        stress = self.converter.from_cartesian(outer_s)
-        d_feature = self.tp(node_feature, stress, self.constant_w.to(node_feature.device))
-        piezo = []
-        for i in range(3):
-            grad_outputs = torch.zeros(bs, 3, device=node_feature.device)
-            grad_outputs[:, i] = 1.0
-            piezo.append(
-                grad(
-                    d_feature,
-                    outer_s,
-                    grad_outputs=grad_outputs,
-                    create_graph=True,
-                    retain_graph=True,
-                )[0].reshape(bs, 9)[:, [0, 4, 8, 1, 5, 6]]
-            )
-        return torch.stack(piezo).transpose(0, 1)
+        with torch.enable_grad():
+            bs = node_feature.shape[0]
+            outer_s = torch.ones(bs, 3, 3, device=node_feature.device, requires_grad=True)
+            stress = self.converter.from_cartesian(outer_s)
+            d_feature = self.tp(node_feature, stress, self.constant_w.to(node_feature.device))
+            piezo = []
+            for i in range(3):
+                grad_outputs = torch.zeros(bs, 3, device=node_feature.device)
+                grad_outputs[:, i] = 1.0
+                piezo.append(
+                    grad(
+                        d_feature,
+                        outer_s,
+                        grad_outputs=grad_outputs,
+                        create_graph=True,
+                        retain_graph=True,
+                    )[0].reshape(bs, 9)[:, [0, 4, 8, 1, 5, 6]]
+                )
+            return torch.stack(piezo).transpose(0, 1)
 
 
 class ElasticBlock(nn.Module):
@@ -282,24 +284,25 @@ class ElasticBlock(nn.Module):
         self.idx = [0, 4, 8, 1, 5, 6]
 
     def forward(self, node_feature):
-        bs = node_feature.shape[0]
-        outer_strain = torch.ones(
-            bs, 3, 3, device=node_feature.device, requires_grad=True
-        )
-        strain = self.converter.from_cartesian(outer_strain)
-        stress = self.tp(node_feature, strain, self.constant_w)
-        final_stress = self.converter.to_cartesian(stress).view(bs, -1)
-        grad_outputs = torch.zeros(bs, 9, device=node_feature.device)
-        elastic = []
-        for i in range(6):
-            grad_outputs.zero_()
-            grad_outputs[:, self.idx[i]] = 1.0
-            grad_elastic = grad(
-                final_stress,
-                outer_strain,
-                grad_outputs=grad_outputs,
-                create_graph=True,
-                retain_graph=True,
-            )[0]
-            elastic.append(grad_elastic.reshape(bs, -1)[:, self.idx].reshape(bs, -1))
-        return torch.stack(elastic).transpose(0, 1)
+        with torch.enable_grad():
+            bs = node_feature.shape[0]
+            outer_strain = torch.ones(
+                bs, 3, 3, device=node_feature.device, requires_grad=True
+            )
+            strain = self.converter.from_cartesian(outer_strain)
+            stress = self.tp(node_feature, strain, self.constant_w)
+            final_stress = self.converter.to_cartesian(stress).view(bs, -1)
+            grad_outputs = torch.zeros(bs, 9, device=node_feature.device)
+            elastic = []
+            for i in range(6):
+                grad_outputs.zero_()
+                grad_outputs[:, self.idx[i]] = 1.0
+                grad_elastic = grad(
+                    final_stress,
+                    outer_strain,
+                    grad_outputs=grad_outputs,
+                    create_graph=True,
+                    retain_graph=True,
+                )[0]
+                elastic.append(grad_elastic.reshape(bs, -1)[:, self.idx].reshape(bs, -1))
+            return torch.stack(elastic).transpose(0, 1)

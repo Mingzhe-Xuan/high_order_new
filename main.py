@@ -62,7 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--share-middle-mlp", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--scalar-invariant-only", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--only-use-embedding", action=argparse.BooleanOptionalAction, default=False)
-    parser.add_argument("--model-type", default="high_order")
+    parser.add_argument("--model-type", "--model_type", "--model", dest="model_type", default="high_order")
     parser.add_argument("--gmtnet-embed-dim", type=int, default=128)
     parser.add_argument("--gmtnet-num-attention-layers", type=int, default=2)
     parser.add_argument("--use-tensorboard", action=argparse.BooleanOptionalAction, default=True)

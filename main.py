@@ -1,4 +1,34 @@
 import argparse
+import os
+import warnings
+
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+
+warnings.filterwarnings(
+    "ignore",
+    message="An issue occurred while importing 'torch-spline-conv'.*",
+    category=UserWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    message="Pandas requires version .* of 'numexpr'.*",
+    category=UserWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    message="Pandas requires version .* of 'bottleneck'.*",
+    category=UserWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    message="`torch.jit.script` is deprecated.*",
+    category=DeprecationWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    message="`torch_geometric.distributed` has been deprecated.*",
+    category=DeprecationWarning,
+)
 
 from src.main import main, seed_everything, worker_init_fn
 

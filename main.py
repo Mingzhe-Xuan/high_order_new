@@ -21,6 +21,11 @@ warnings.filterwarnings(
 )
 warnings.filterwarnings(
     "ignore",
+    message="An output with one or more elements was resized since it had shape.*",
+    category=UserWarning,
+)
+warnings.filterwarnings(
+    "ignore",
     message="`torch.jit.script` is deprecated.*",
     category=DeprecationWarning,
 )

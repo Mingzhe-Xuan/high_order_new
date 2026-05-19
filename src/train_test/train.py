@@ -669,7 +669,7 @@ def train(
         if model_type == "gmtnet":
             tensor_models = _create_gmtnet_tensor_models(
                 tensor_properties,
-                use_mask=False,
+                use_mask=True,
                 gmtnet_embed_dim=gmtnet_embed_dim,
                 gmtnet_num_attention_layers=gmtnet_num_attention_layers,
             )

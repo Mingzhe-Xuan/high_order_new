@@ -15,6 +15,8 @@ from .gmtnet_blocks import (
 
 
 def equality_adjustment(equality, batch):
+    if equality.dim() == 4:
+        equality = equality[:, 0]
     b, l1, l2 = batch.size()
     batch = batch.reshape(b, l1 * l2)
     for i in range(b):

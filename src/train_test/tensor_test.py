@@ -144,8 +144,11 @@ def tensor_test(
                 batch_index = batch.batch.to(device)
                 tensor_property = batch.tensor_property.to(device)
 
+                feat_mask = batch.feat_mask.to(device) if hasattr(batch, "feat_mask") else None
+                equality = batch.equality.to(device) if hasattr(batch, "equality") else None
+
                 pred_tensor_property = tensor_models[prop](
-                    atom_type, edge_vec, edge_index, batch_index
+                    atom_type, edge_vec, edge_index, batch_index, feat_mask, equality
                 )
 
                 # # For debugging

@@ -25,7 +25,9 @@ def _predict_tensor_property(model, batch, device):
     edge_index = batch.edge_index.to(device)
     edge_vec = batch.edge_vec.to(device)
     batch_index = batch.batch.to(device)
-    return model(atom_type, edge_vec, edge_index, batch_index)
+    feat_mask = batch.feat_mask.to(device) if hasattr(batch, "feat_mask") else None
+    equality = batch.equality.to(device) if hasattr(batch, "equality") else None
+    return model(atom_type, edge_vec, edge_index, batch_index, feat_mask, equality)
 
 
 def validate_tensor_model(model, val_loader, device, loss_fn):

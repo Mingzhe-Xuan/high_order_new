@@ -211,7 +211,7 @@ def _get_params_to_save(
             "cutoff": cutoff,
             "load_model": False,
             "reduce_cell": False,
-            "use_mask": False,
+            "use_mask": True,
             "gmtnet_embed_dim": gmtnet_embed_dim,
             "gmtnet_num_attention_layers": gmtnet_num_attention_layers,
             "optimizer": optimizer,

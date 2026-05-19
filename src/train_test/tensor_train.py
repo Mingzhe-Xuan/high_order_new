@@ -52,9 +52,9 @@ def validate_tensor_model(model, val_loader, device, loss_fn):
             pred_tensor_property = _predict_tensor_property(model, batch, device)
             loss = loss_fn(pred_tensor_property, tensor_property)
             pointwise_mae = (
-                (pred_tensor_property - tensor_property).view(-1).abs().mean()
+                (pred_tensor_property - tensor_property).reshape(-1).abs().mean()
             )
-            mse = (pred_tensor_property - tensor_property).view(-1).pow(2).mean()
+            mse = (pred_tensor_property - tensor_property).reshape(-1).pow(2).mean()
             # fnorm_error = abs(
             #     torch.norm(pred_tensor_property, dim=-1)
             #     - torch.norm(tensor_property, dim=-1)
@@ -330,9 +330,9 @@ def tensor_train(
                 optimizer.step()
             
             pointwise_mae = (
-                (pred_tensor_property - tensor_property).view(-1).abs().mean()
+                (pred_tensor_property - tensor_property).reshape(-1).abs().mean()
             )
-            mse = (pred_tensor_property - tensor_property).view(-1).pow(2).mean()
+            mse = (pred_tensor_property - tensor_property).reshape(-1).pow(2).mean()
             fnorm_error = torch.norm(
                 pred_tensor_property - tensor_property, dim=property_dim
             )

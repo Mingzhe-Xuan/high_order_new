@@ -41,7 +41,7 @@ def calculate_tensor_metrics(y_true, y_pred):
     rmse = torch.sqrt(mse)
     # scalar
     # mean() calculates mean over all dimensions
-    pointwise_mae = (y_pred - y_true).view(-1).abs().mean()
+    pointwise_mae = (y_pred - y_true).reshape(-1).abs().mean()
 
     # (num_strctures,)
     # fnorm_error = torch.abs(

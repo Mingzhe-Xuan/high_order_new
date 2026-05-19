@@ -7,6 +7,7 @@ from tqdm import tqdm
 from e3nn import o3
 from e3nn.io import CartesianTensor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from collections import defaultdict
 
 
 SYMMETRY_CONFIGS = {
@@ -167,11 +168,66 @@ def get_neighbor_list(
     return edge_index, edge_vec
 
 
+def _canonize_edge(src_id, dst_id, src_image, dst_image):
+    if dst_id < src_id:
+        src_id, dst_id = dst_id, src_id
+        src_image, dst_image = dst_image, src_image
+    if not np.array_equal(src_image, (0, 0, 0)):
+        shift = src_image
+        src_image = tuple(np.subtract(src_image, shift))
+        dst_image = tuple(np.subtract(dst_image, shift))
+    return src_id, dst_id, src_image, dst_image
+
+
+def get_gmtnet_neighbor_list(structure, cutoff: float, max_neighbors: int = 12):
+    neighbor_lists = structure.get_all_neighbors(r=cutoff)
+    min_neighbors = min(len(neighbors) for neighbors in neighbor_lists)
+    if min_neighbors < max_neighbors:
+        lattice = structure.lattice
+        next_cutoff = max(lattice.a, lattice.b, lattice.c) if cutoff < max(lattice.a, lattice.b, lattice.c) else 2 * cutoff
+        return get_gmtnet_neighbor_list(structure, next_cutoff, max_neighbors)
+
+    edges = defaultdict(set)
+    for site_idx, neighbor_list in enumerate(neighbor_lists):
+        neighbor_list = sorted(neighbor_list, key=lambda item: item.nn_distance)
+        distances = np.array([neighbor.nn_distance for neighbor in neighbor_list])
+        ids = np.array([neighbor.index for neighbor in neighbor_list])
+        images = np.array([neighbor.image for neighbor in neighbor_list])
+        max_dist = distances[max_neighbors - 1]
+        ids = ids[distances <= max_dist]
+        images = images[distances <= max_dist]
+        for dst, image in zip(ids, images):
+            dst = int(dst)
+            src_id, dst_id, _, dst_image = _canonize_edge(site_idx, dst, (0, 0, 0), tuple(image))
+            edges[(src_id, dst_id)].add(dst_image)
+
+    src_nodes = []
+    dst_nodes = []
+    edge_vecs = []
+    for (src_id, dst_id), images in edges.items():
+        for dst_image in images:
+            dst_coord = structure.frac_coords[dst_id] + dst_image
+            edge_vec = structure.lattice.get_cartesian_coords(dst_coord - structure.frac_coords[src_id])
+            src_nodes.extend([src_id, dst_id])
+            dst_nodes.extend([dst_id, src_id])
+            edge_vecs.extend([edge_vec, -edge_vec])
+
+    if len(src_nodes) == 0:
+        edge_index = torch.empty((2, 0), dtype=torch.long)
+        edge_vec = torch.empty((0, 3), dtype=torch.float32)
+    else:
+        edge_index = torch.tensor([src_nodes, dst_nodes], dtype=torch.long)
+        edge_vec = torch.tensor(np.array(edge_vecs), dtype=torch.float32)
+    return edge_index, edge_vec
+
+
 class TensorDataset(Dataset):
-    def __init__(self, path: str, property_name: str, l_max: int, cutoff: float):
+    def __init__(self, path: str, property_name: str, l_max: int, cutoff: float, graph_mode: str = "high_order", max_neighbors: int = 12):
         self.property_name = property_name
         self.l_max = l_max
         self.cutoff = cutoff
+        self.graph_mode = graph_mode
+        self.max_neighbors = max_neighbors
         with open(path, "rb") as f:
             self.data = pkl.load(f)
 
@@ -184,9 +240,12 @@ class TensorDataset(Dataset):
             os.path.dirname(path),
             "neighbor_list",
         )
+        cache_name = f"{self.property_name}_neighbor_list_{self.graph_mode}_cutoff_{self.cutoff:.2f}"
+        if self.graph_mode == "gmtnet":
+            cache_name += f"_max_neighbors_{self.max_neighbors}"
         self.neighbor_list_filename = os.path.join(
             self.neighbor_list_path,
-            f"{self.property_name}_neighbor_list_cutoff_{self.cutoff:.2f}.pt",
+            f"{cache_name}.pt",
         )
         self.symmetry_metadata_filename = os.path.join(
             self.neighbor_list_path,
@@ -202,8 +261,10 @@ class TensorDataset(Dataset):
                 atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)
                 lattice_mat = structure.lattice.matrix
                 
-                # Calculate edge_index and edge_vec considering PBC
-                edge_index, edge_vec = get_neighbor_list(atom_coords, self.cutoff, lattice_mat)
+                if self.graph_mode == "gmtnet":
+                    edge_index, edge_vec = get_gmtnet_neighbor_list(structure, self.cutoff, self.max_neighbors)
+                else:
+                    edge_index, edge_vec = get_neighbor_list(atom_coords, self.cutoff, lattice_mat)
                 
                 self.cached_neighbor_data.append((edge_index, edge_vec))
             torch.save(self.cached_neighbor_data, self.neighbor_list_filename)

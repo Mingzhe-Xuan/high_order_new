@@ -68,6 +68,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--scalar-invariant-only", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--only-use-embedding", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--model-type", "--model_type", "--model", dest="model_type", default="high_order")
+    parser.add_argument("--graph-mode", choices=("high_order", "gmtnet"), default=None)
+    parser.add_argument("--max-neighbors", type=int, default=12)
     parser.add_argument("--gmtnet-embed-dim", type=int, default=128)
     parser.add_argument("--gmtnet-num-attention-layers", type=int, default=2)
     parser.add_argument("--use-tensorboard", action=argparse.BooleanOptionalAction, default=True)
@@ -92,12 +94,17 @@ def _apply_model_defaults(kwargs: dict, parser: argparse.ArgumentParser) -> None
         "need_self_train": False,
         "need_scalar_train": False,
         "need_tensor_train": True,
+        "graph_mode": "gmtnet",
+        "max_neighbors": 12,
         "gmtnet_embed_dim": 128,
         "gmtnet_num_attention_layers": 2,
     }
     parser_defaults = {action.dest: action.default for action in parser._actions}
     for key, value in defaults.items():
-        if kwargs[key] == parser_defaults[key]:
+        if key == "graph_mode":
+            if kwargs[key] is None:
+                kwargs[key] = value
+        elif kwargs[key] == parser_defaults[key]:
             kwargs[key] = value
 
 
@@ -107,6 +114,8 @@ def cli() -> None:
     kwargs = vars(args)
     kwargs["train_val_test"] = tuple(kwargs["train_val_test"])
     _apply_model_defaults(kwargs, parser)
+    if kwargs["graph_mode"] is None:
+        kwargs["graph_mode"] = "high_order"
     seed_everything(kwargs["seed"])
     main(**kwargs)
 

@@ -413,6 +413,7 @@ def main(
         max_neighbors=max_neighbors,
         use_tensorboard=use_tensorboard,
     )
+    params_path = save_params_json(params_to_save, checkpoint_dir)
     print(f"Saved parameters to {params_path}")
 
     print("Start loading data...")

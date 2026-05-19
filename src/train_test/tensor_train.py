@@ -276,7 +276,7 @@ def tensor_train(
             edge_vec = batch.edge_vec.to(device)
             batch_index = batch.batch.to(device)
             tensor_property = batch.tensor_property.to(device)
-            # print("="*80)
+            property_dim = tuple(range(1, tensor_property.dim()))
             # print("Atom type:")
             # print(atom_type.shape)
             # print("="*80)

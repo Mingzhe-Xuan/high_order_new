@@ -343,7 +343,7 @@ class TensorDataset(Dataset):
         structure = self.data[idx]["structure"]
         # atom_type: (num_nodes,)
         atom_type = torch.tensor(structure.atomic_numbers, dtype=torch.long)
-        num_nodes = torch.tensor(atom_type.shape[0], dtype=torch.long)
+        num_nodes = int(atom_type.shape[0])
         # atom_coords: (num_nodes,3)
         atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)
         

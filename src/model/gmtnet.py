@@ -67,7 +67,7 @@ class HighOrderGMTNet(nn.Module):
             raise ValueError(f"task_mode {self.task_mode} is not implemented")
         self.target = target or getattr(args, "target", None)
         embsize = getattr(args, "gmtnet_embed_dim", 128)
-        atom_feature_dim = getattr(args, "gmtnet_atom_feature_dim", 92)
+        atom_feature_dim = getattr(args, "gmtnet_atom_feature_dim", 118)
         num_attention_layers = getattr(args, "gmtnet_num_attention_layers", 2)
         target_irreps = _target_irreps(self.target) if self.task_mode == "tensor" else getattr(
             args,
@@ -169,4 +169,9 @@ class HighOrderGMTNet(nn.Module):
             return atom_type.float()
         num_classes = self.atom_embedding.in_features
         zero_based = atom_type.clamp_min(1) - 1
+        if zero_based.numel() > 0 and zero_based.max().item() >= num_classes:
+            raise ValueError(
+                f"atom_type contains atomic number {atom_type.max().item()}, "
+                f"but gmtnet_atom_feature_dim={num_classes}"
+            )
         return torch.nn.functional.one_hot(zero_based, num_classes=num_classes).float()

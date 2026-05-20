@@ -27,7 +27,7 @@ class AlexandriaDataset(Dataset):
             os.path.dirname(self.db_path),
             "neighbor_list",
         )
-        cache_name = f"alexandria_neighbor_list_v2_{self.graph_mode}_cutoff_{self.cutoff:.2f}"
+        cache_name = f"alexandria_neighbor_list_{self.graph_mode}_cutoff_{self.cutoff:.2f}"
         if self.graph_mode == "gmtnet":
             cache_name += f"_max_neighbors_{self.max_neighbors}"
         self.neighbor_list_filename = os.path.join(

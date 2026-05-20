@@ -20,6 +20,9 @@ neighbor_list/
 # Training outputs
 runs/
 checkpoints/
+logging/
+pics/
+metrics/
 outputs/
 logs/
 

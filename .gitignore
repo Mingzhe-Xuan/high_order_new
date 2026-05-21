@@ -26,6 +26,9 @@ metrics/
 outputs/
 logs/
 
+# Local Claude worktrees
+.claude/worktrees/
+
 # Model/checkpoint artifacts
 *.pt
 !src/model/Jd.pt

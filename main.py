@@ -36,8 +36,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--final-vec-hidden-dim", type=int, default=16)
     parser.add_argument("--final-scalar-out-dim", type=int, default=16)
     parser.add_argument("--final-vec-out-dim", type=int, default=8)
-    parser.add_argument("--need-self-train", "--self-train", dest="need_self_train", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--need-scalar-train", "--scalar-train", dest="need_scalar_train", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--need-self-train", "--self-train", dest="need_self_train", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--need-scalar-train", "--scalar-train", dest="need_scalar_train", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--need-tensor-train", "--tensor-train", dest="need_tensor_train", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--final-pooling", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--self-num-epochs", type=int, default=350)
@@ -70,7 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model-type", "--model_type", "--model", dest="model_type", default="high_order")
     parser.add_argument("--target", default=None)
     parser.add_argument("--graph-mode", choices=("high_order", "gmtnet"), default=None)
-    parser.add_argument("--max-neighbors", type=int, default=12)
+    parser.add_argument("--max-neighbors", type=int, default=16)
     parser.add_argument("--gmtnet-embed-dim", type=int, default=128)
     parser.add_argument("--gmtnet-num-attention-layers", type=int, default=2)
     parser.add_argument("--use-tensorboard", action=argparse.BooleanOptionalAction, default=True)
@@ -93,7 +93,7 @@ def _apply_model_defaults(kwargs: dict, parser: argparse.ArgumentParser) -> None
         "weight_decay": 1e-5,
         "tensor_loss_func": "huber",
         "graph_mode": "gmtnet",
-        "max_neighbors": 12,
+        "max_neighbors": 16,
         "gmtnet_embed_dim": 128,
         "gmtnet_num_attention_layers": 2,
     }

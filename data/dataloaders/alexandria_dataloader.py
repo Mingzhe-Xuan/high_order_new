@@ -13,7 +13,7 @@ def get_alexandria_dataloader(
     shuffle: bool = True,
     worker_init_fn = None,
     graph_mode: str = "high_order",
-    max_neighbors: int = 12,
+    max_neighbors: int = 16,
 ) -> DataLoader:
     db_path = name_path_dict["alexandria"]
     dataset = AlexandriaDataset(db_path, cutoff, graph_mode, max_neighbors)

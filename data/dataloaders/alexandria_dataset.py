@@ -20,7 +20,7 @@ class AlexandriaDataset(Dataset):
         db_path: str,
         cutoff: float,
         graph_mode: str = "high_order",
-        max_neighbors: int = 12,
+        max_neighbors: int = 16,
     ):
         self.db_path = db_path
         self.cutoff = cutoff

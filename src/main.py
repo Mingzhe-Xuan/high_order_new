@@ -81,7 +81,7 @@ def _create_scalar_dataloaders(
     num_workers,
     worker_init_fn=None,
     graph_mode="high_order",
-    max_neighbors=12,
+    max_neighbors=16,
 ):
     """Create dataloaders for scalar properties."""
     dataloaders = {}
@@ -376,7 +376,7 @@ def main(
     gmtnet_embed_dim: int = 128,
     gmtnet_num_attention_layers: int = 2,
     graph_mode: str = "high_order",
-    max_neighbors: int = 12,
+    max_neighbors: int = 16,
     use_tensorboard: bool = True,
 ):
     print("Start running...")

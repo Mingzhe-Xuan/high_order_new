@@ -196,7 +196,7 @@ def _canonize_edge(src_id, dst_id, src_image, dst_image):
     return src_id, dst_id, src_image, dst_image
 
 
-def get_gmtnet_neighbor_list(structure, cutoff: float, max_neighbors: int = 12):
+def get_gmtnet_neighbor_list(structure, cutoff: float, max_neighbors: int = 16):
     neighbor_lists = structure.get_all_neighbors(r=cutoff)
     min_neighbors = min(len(neighbors) for neighbors in neighbor_lists)
     if min_neighbors < max_neighbors:
@@ -239,7 +239,7 @@ def get_gmtnet_neighbor_list(structure, cutoff: float, max_neighbors: int = 12):
 
 
 class TensorDataset(Dataset):
-    def __init__(self, path: str, property_name: str, l_max: int, cutoff: float, graph_mode: str = "high_order", max_neighbors: int = 12):
+    def __init__(self, path: str, property_name: str, l_max: int, cutoff: float, graph_mode: str = "high_order", max_neighbors: int = 16):
         self.property_name = property_name
         self.l_max = l_max
         self.cutoff = cutoff

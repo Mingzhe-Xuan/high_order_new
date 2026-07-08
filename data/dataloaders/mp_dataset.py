@@ -9,7 +9,7 @@ from .materials_db_reader import MaterialsProjectDatabase
 from .tensor_dataset import get_cgcnn_atom_features_from_ase
 
 
-def get_ase_gmtnet_neighbor_list(atoms, cutoff: float, max_neighbors: int = 12):
+def get_ase_gmtnet_neighbor_list(atoms, cutoff: float, max_neighbors: int = 16):
     current_cutoff = cutoff
     while True:
         src, dst, displacement = neighbor_list("ijD", atoms, current_cutoff)
@@ -54,7 +54,7 @@ class MPDataset(Dataset):
         cutoff: float,
         num_perturb: int = 1,
         graph_mode: str = "high_order",
-        max_neighbors: int = 12,
+        max_neighbors: int = 16,
     ):
         self.db_path = db_path
         self.cutoff = cutoff

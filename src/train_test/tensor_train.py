@@ -233,6 +233,19 @@ def tensor_train(
             scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
         elif scheduler_name == "step":
             scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+        elif scheduler_name == "polynomial":
+            total_iters = max(1, len(tensor_trainset) * num_epochs)
+            end_lr = 1e-5
+            power = 1
+            scheduler = optim.lr_scheduler.LambdaLR(
+                optimizer,
+                lr_lambda=lambda step: (
+                    (learning_rate - end_lr)
+                    * max(0.0, 1 - min(step, total_iters) / total_iters) ** power
+                    + end_lr
+                )
+                / learning_rate,
+            )
         else:
             raise NotImplementedError(f"scheduler {scheduler_name} is not implemented")
 
@@ -330,6 +343,8 @@ def tensor_train(
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_grad_norm)
 
                 optimizer.step()
+            if scheduler_name == "polynomial":
+                scheduler.step()
             
             pointwise_mae = (
                 (pred_tensor_property - tensor_property).reshape(-1).abs().mean()
@@ -379,7 +394,8 @@ def tensor_train(
         val_mse_scores.append(val_mse)
         val_mean_fnorm_percent_error.append(val_fnorm_err)
         
-        scheduler.step()
+        if scheduler_name != "polynomial":
+            scheduler.step()
 
         if writer is not None:
             writer.add_scalar("Loss/train", avg_loss, epoch)

@@ -68,6 +68,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--scalar-invariant-only", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--only-use-embedding", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--model-type", "--model_type", "--model", dest="model_type", default="high_order")
+    parser.add_argument("--target", default=None)
     parser.add_argument("--graph-mode", choices=("high_order", "gmtnet"), default=None)
     parser.add_argument("--max-neighbors", type=int, default=12)
     parser.add_argument("--gmtnet-embed-dim", type=int, default=128)

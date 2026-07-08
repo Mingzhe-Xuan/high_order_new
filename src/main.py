@@ -148,9 +148,28 @@ def _create_tensor_dataloaders(
     return dataloaders
 
 
+def _select_tensor_properties_for_model(model_type, target, available_properties):
+    if model_type != "gmtnet" or target is None:
+        return available_properties
+
+    aliases = {
+        "dielectric": "dielectric",
+        "piezoelectric": "piezoelectric_C_m2",
+        "elastic": "elastic_total_kbar",
+    }
+    selected = aliases.get(target, target)
+    if selected not in available_properties:
+        raise ValueError(
+            f"target {target!r} is not available for model_type='gmtnet'. "
+            f"Available tensor properties: {available_properties}"
+        )
+    return [selected]
+
+
 def _get_params_to_save(
     *,
     model_type,
+    target,
     cutoff,
     train_batch_size,
     val_batch_size,
@@ -207,6 +226,7 @@ def _get_params_to_save(
     if model_type == "gmtnet":
         return {
             "model": "gmtnet",
+            "target": target,
             "epochs": tensor_num_epochs,
             "batch_size": train_batch_size,
             "val_batch_size": val_batch_size,
@@ -286,6 +306,7 @@ def _get_params_to_save(
         "tensor_train_limit": tensor_train_limit,
         "start_epoch": start_epoch,
         "model_type": model_type,
+        "target": target,
         "gmtnet_embed_dim": gmtnet_embed_dim,
         "gmtnet_num_attention_layers": gmtnet_num_attention_layers,
         "graph_mode": graph_mode,
@@ -351,6 +372,7 @@ def main(
     scalar_invariant_only: bool = False,
     only_use_embedding: bool = False,
     model_type: str = "high_order",
+    target: str = None,
     gmtnet_embed_dim: int = 128,
     gmtnet_num_attention_layers: int = 2,
     graph_mode: str = "high_order",
@@ -364,6 +386,7 @@ def main(
     
     params_to_save = _get_params_to_save(
         model_type=model_type,
+        target=target,
         cutoff=cutoff,
         train_batch_size=train_batch_size,
         val_batch_size=val_batch_size,
@@ -420,6 +443,12 @@ def main(
     params_path = save_params_json(params_to_save, checkpoint_dir)
     print(f"Saved parameters to {params_path}")
 
+    active_tensor_properties = _select_tensor_properties_for_model(
+        model_type,
+        target,
+        tensor_properties,
+    )
+
     print("Start loading data...")
     if need_self_train:
         USE_MP = True
@@ -473,7 +502,7 @@ def main(
     if need_tensor_train:
         tensor_dataloaders = _create_tensor_dataloaders(
             name_path_dict,
-            tensor_properties,
+            active_tensor_properties,
             cutoff,
             train_val_test,
             seed,
@@ -552,6 +581,7 @@ def main(
         scalar_invariant_only=scalar_invariant_only,
         only_use_embedding=only_use_embedding,
         model_type=model_type,
+        tensor_property_names=active_tensor_properties,
         gmtnet_embed_dim=gmtnet_embed_dim,
         gmtnet_num_attention_layers=gmtnet_num_attention_layers,
         use_tensorboard=use_tensorboard,

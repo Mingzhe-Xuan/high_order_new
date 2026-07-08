@@ -6,7 +6,11 @@ from torch_geometric.data import Data, Dataset
 import os
 from tqdm import tqdm
 
-from .tensor_dataset import get_gmtnet_neighbor_list, get_neighbor_list
+from .tensor_dataset import (
+    get_cgcnn_atom_features_from_structure,
+    get_gmtnet_neighbor_list,
+    get_neighbor_list,
+)
 
 
 class ScalarDataset(Dataset):
@@ -141,9 +145,13 @@ class ScalarDataset(Dataset):
         ), f"Data must contain '{self.property_name}' key"
 
         structure = self.data[idx]["structure"]
-        # atom_type: (num_nodes,)
-        atom_type = torch.tensor(structure.atomic_numbers, dtype=torch.long)
-        num_nodes = int(atom_type.shape[0])
+        atomic_numbers = torch.tensor(structure.atomic_numbers, dtype=torch.long)
+        atom_type = (
+            get_cgcnn_atom_features_from_structure(structure)
+            if self.graph_mode == "gmtnet"
+            else atomic_numbers
+        )
+        num_nodes = int(atomic_numbers.shape[0])
         # atom_coords: (num_nodes,3)
         atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)
         # lattice_mat: (3, 3)

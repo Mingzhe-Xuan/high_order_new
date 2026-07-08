@@ -344,6 +344,7 @@ def train(
     scalar_invariant_only: bool = True,
     only_use_embedding: bool = False,
     model_type: str = "high_order",
+    tensor_property_names: list[str] = None,
     gmtnet_embed_dim: int = 128,
     gmtnet_num_attention_layers: int = 2,
     use_tensorboard: bool = True,
@@ -427,6 +428,7 @@ def train(
     ##################################################################################################
 
     assert model_type in {"high_order", "gmtnet"}, f"model_type {model_type} is not implemented"
+    active_tensor_properties = tensor_property_names or tensor_properties
 
     # Create shared model components
     (
@@ -483,6 +485,7 @@ def train(
         "optimizer": optimizer,
         "scheduler": scheduler,
         "model_type": model_type,
+        "tensor_properties": active_tensor_properties,
         "use_tensorboard": use_tensorboard,
     }
     
@@ -743,14 +746,14 @@ def train(
     if need_tensor_train:
         if model_type == "gmtnet":
             tensor_models = _create_gmtnet_tensor_models(
-                tensor_properties,
+                active_tensor_properties,
                 use_mask=True,
                 gmtnet_embed_dim=gmtnet_embed_dim,
                 gmtnet_num_attention_layers=gmtnet_num_attention_layers,
             )
         else:
             tensor_models = _create_tensor_models(
-                tensor_properties,
+                active_tensor_properties,
                 embedding_layer,
                 invariant_layers,
                 equivariant_layers,
@@ -765,7 +768,7 @@ def train(
                 num_final_hidden_layers,
             )
 
-        for prop in tensor_properties:
+        for prop in active_tensor_properties:
             if model_type == "gmtnet":
                 trained_model, history = tensor_train(
                     property_name=prop,

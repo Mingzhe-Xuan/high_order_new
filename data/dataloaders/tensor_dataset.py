@@ -6,6 +6,7 @@ import os
 from tqdm import tqdm
 from e3nn import o3
 from e3nn.io import CartesianTensor
+from jarvis.core.specie import get_node_attributes
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from collections import defaultdict
 
@@ -43,6 +44,22 @@ def _target_name(property_name: str) -> str:
     if "elastic" in property_name:
         return "elastic"
     raise NotImplementedError(f"property_name {property_name} not supported")
+
+
+def _cgcnn_features_from_symbols(symbols) -> torch.Tensor:
+    features = [
+        list(get_node_attributes(symbol, atom_features="cgcnn"))
+        for symbol in symbols
+    ]
+    return torch.tensor(np.array(features), dtype=torch.float32)
+
+
+def get_cgcnn_atom_features_from_structure(structure) -> torch.Tensor:
+    return _cgcnn_features_from_symbols([site.specie.symbol for site in structure])
+
+
+def get_cgcnn_atom_features_from_ase(atoms) -> torch.Tensor:
+    return _cgcnn_features_from_symbols(atoms.get_chemical_symbols())
 
 
 def _rm_duplicates(vectors: np.ndarray) -> np.ndarray:
@@ -341,9 +358,13 @@ class TensorDataset(Dataset):
         ), f"Data must contain '{self.property_name}' key"
 
         structure = self.data[idx]["structure"]
-        # atom_type: (num_nodes,)
-        atom_type = torch.tensor(structure.atomic_numbers, dtype=torch.long)
-        num_nodes = int(atom_type.shape[0])
+        atomic_numbers = torch.tensor(structure.atomic_numbers, dtype=torch.long)
+        atom_type = (
+            get_cgcnn_atom_features_from_structure(structure)
+            if self.graph_mode == "gmtnet"
+            else atomic_numbers
+        )
+        num_nodes = int(atomic_numbers.shape[0])
         # atom_coords: (num_nodes,3)
         atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)
         

@@ -6,6 +6,7 @@ import os
 from tqdm import tqdm
 
 from .materials_db_reader import MaterialsProjectDatabase
+from .tensor_dataset import get_cgcnn_atom_features_from_ase
 
 
 def get_ase_gmtnet_neighbor_list(atoms, cutoff: float, max_neighbors: int = 12):
@@ -152,9 +153,13 @@ class MPDataset(Dataset):
             atoms = db.get_atoms_by_id(idx)
             if atoms is None:
                 raise ValueError(f"No atoms data found for index {idx}")
-            # atom_type: (num_nodes,)
-            atom_type = torch.tensor(atoms.get_atomic_numbers(), dtype=torch.long)
-            num_nodes = int(atom_type.shape[0])
+            atomic_numbers = torch.tensor(atoms.get_atomic_numbers(), dtype=torch.long)
+            atom_type = (
+                get_cgcnn_atom_features_from_ase(atoms)
+                if self.graph_mode == "gmtnet"
+                else atomic_numbers
+            )
+            num_nodes = int(atomic_numbers.shape[0])
             # atom_coords: (num_nodes, 3)
             atom_coords = torch.tensor(atoms.get_positions(), dtype=torch.float32)
             # edge_index and edge_vec from cache (already PBC corrected)
@@ -166,7 +171,7 @@ class MPDataset(Dataset):
             delta = unstable_atom_coords - atom_coords
             unstable_edge_vec = edge_vec + delta[dst] - delta[src]
             if edge_index.numel() > 0:
-                assert edge_index.max().item() < atom_type.shape[0]
+                assert edge_index.max().item() < num_nodes
             assert edge_vec.shape[0] == edge_index.shape[1]
             assert unstable_edge_vec.shape[0] == edge_index.shape[1]
             # no batch dimension because num_atoms varies between structures

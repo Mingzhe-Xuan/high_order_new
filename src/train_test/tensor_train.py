@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import os
+import time
 from pathlib import Path
 
 from src.model import Model
@@ -108,6 +109,7 @@ def tensor_train(
     use_amp: bool = True,
     model_instance: nn.Module = None,
     use_tensorboard: bool = True,
+    return_timing: bool = False,
 ):
     """
     Train a tensor property prediction model with validation.
@@ -273,6 +275,9 @@ def tensor_train(
 
     if limit is None:
         limit = num_epochs
+
+    train_start_time = time.perf_counter()
+    epochs_ran = 0
     model.train()
     print(f"Training {property_name} model...")
     for epoch in range(start_epoch, min(num_epochs, start_epoch + limit)):
@@ -465,8 +470,11 @@ def tensor_train(
             )
             print(f"Saved checkpoint at epoch {epoch+1} to {checkpoint_path}")
 
+        epochs_ran += 1
+
+    train_elapsed_seconds = time.perf_counter() - train_start_time
+
     print(f"Training completed. Best val loss: {best_loss:.6f}")
-    
     if writer is not None:
         writer.close()
 
@@ -509,4 +517,10 @@ def tensor_train(
         "val_mean_fnorm_percent_error": val_mean_fnorm_percent_error,
     }
     
+    timing_info = {
+        "train_seconds": train_elapsed_seconds,
+        "epochs_ran": epochs_ran,
+    }
+    if return_timing:
+        return model, training_history, timing_info
     return model, training_history

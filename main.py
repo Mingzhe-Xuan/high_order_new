@@ -40,7 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--need-scalar-train", "--scalar-train", dest="need_scalar_train", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--need-tensor-train", "--tensor-train", dest="need_tensor_train", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--final-pooling", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--self-num-epochs", type=int, default=350)
+    parser.add_argument("--self-num-epochs", type=int, default=300)
     parser.add_argument("--scalar-num-epochs", type=int, default=400)
     parser.add_argument("--tensor-num-epochs", type=int, default=200)
     parser.add_argument("--lr", type=float, default=1e-3)

@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import os
+import time
 from pathlib import Path
 
 from src.model import Model
@@ -47,6 +48,7 @@ def self_train(
     limit: int = None,
     use_amp: bool = True,
     model_instance=None,
+    return_timing: bool = False,
 ):
     """
     Self-supervised training for the model using force prediction.
@@ -169,6 +171,9 @@ def self_train(
 
     if limit is None:
         limit = num_epochs
+
+    train_start_time = time.perf_counter()
+    epochs_ran = 0
     model.train()
     for epoch in range(start_epoch, min(num_epochs, start_epoch + limit)):
         epoch_loss = 0.0
@@ -362,8 +367,11 @@ def self_train(
             )
             print(f"Saved checkpoint at epoch {epoch+1} to {checkpoint_path}")
 
+        epochs_ran += 1
+
+    train_elapsed_seconds = time.perf_counter() - train_start_time
+
     print(f"Training completed. Best loss: {best_loss:.6f}")
-    
     writer.close()
     
     vis_dir = get_visualization_dir(pic_dir)
@@ -417,4 +425,10 @@ def self_train(
         filename="self_train_fnorm_error.png",
     )
     
+    timing_info = {
+        "train_seconds": train_elapsed_seconds,
+        "epochs_ran": epochs_ran,
+    }
+    if return_timing:
+        return model, timing_info
     return model

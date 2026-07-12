@@ -538,6 +538,13 @@ def train(
     # Self train
     scalar_train_history = {}
     tensor_train_history = {}
+    total_training_seconds = 0.0
+    total_training_epochs = 0
+
+    def _accumulate_timing(timing_info):
+        nonlocal total_training_seconds, total_training_epochs
+        total_training_seconds += timing_info.get("train_seconds", 0.0)
+        total_training_epochs += timing_info.get("epochs_ran", 0)
 
     if need_self_train:
         if model_type == "gmtnet":
@@ -545,7 +552,7 @@ def train(
                 gmtnet_embed_dim=gmtnet_embed_dim,
                 gmtnet_num_attention_layers=gmtnet_num_attention_layers,
             )
-            self_trained_model = self_train(
+            self_trained_model, self_timing = self_train(
                 embedding_layer=None,
                 invariant_layers=None,
                 middle_mlp=None,
@@ -570,7 +577,9 @@ def train(
                 limit=self_limit,
                 use_amp=use_amp,
                 model_instance=gmtnet_force_model,
+                return_timing=True,
             )
+            _accumulate_timing(self_timing)
         else:
             self_middle_mlp = MiddleMLP(
                 scalar_dim_in=embed_dim,
@@ -590,7 +599,7 @@ def train(
                 irreps_out=final_irreps_out,
             )
 
-            self_trained_model = self_train(
+            self_trained_model, self_timing = self_train(
                 embedding_layer=embedding_layer,
                 invariant_layers=invariant_layers,
                 middle_mlp=self_middle_mlp,
@@ -614,7 +623,9 @@ def train(
                 warmup_periods=warmup_periods,
                 limit=self_limit,
                 use_amp=use_amp,
+                return_timing=True,
             )
+            _accumulate_timing(self_timing)
 
             embedding_layer = self_trained_model.embedding_layer
             if not only_use_embedding:
@@ -654,7 +665,7 @@ def train(
 
         for prop in scalar_properties:
             if model_type == "gmtnet":
-                trained_model, history = scalar_train(
+                trained_model, history, timing_info = scalar_train(
                     property_name=prop,
                     embedding_layer=None,
                     invariant_layers=None,
@@ -679,9 +690,11 @@ def train(
                     limit=scalar_limit,
                     use_amp=use_amp,
                     model_instance=scalar_models[prop],
+                    return_timing=True,
                 )
+                _accumulate_timing(timing_info)
             elif share_middle_mlp:
-                trained_model, history = scalar_train(
+                trained_model, history, timing_info = scalar_train(
                     property_name=prop,
                     embedding_layer=embedding_layer,
                     invariant_layers=invariant_layers,
@@ -706,9 +719,11 @@ def train(
                     loss_func=scalar_loss_func,
                     limit=scalar_limit,
                     use_amp=use_amp,
+                    return_timing=True,
                 )
+                _accumulate_timing(timing_info)
             else:
-                trained_model, history = scalar_train(
+                trained_model, history, timing_info = scalar_train(
                     property_name=prop,
                     embedding_layer=embedding_layer,
                     invariant_layers=invariant_layers,
@@ -732,7 +747,9 @@ def train(
                     loss_func=scalar_loss_func,
                     limit=scalar_limit,
                     use_amp=use_amp,
+                    return_timing=True,
                 )
+                _accumulate_timing(timing_info)
             scalar_models[prop] = trained_model
             scalar_train_history[prop] = history
 
@@ -770,7 +787,7 @@ def train(
 
         for prop in active_tensor_properties:
             if model_type == "gmtnet":
-                trained_model, history = tensor_train(
+                trained_model, history, timing_info = tensor_train(
                     property_name=prop,
                     embedding_layer=None,
                     invariant_layers=None,
@@ -796,9 +813,11 @@ def train(
                     use_amp=use_amp,
                     model_instance=tensor_models[prop],
                     use_tensorboard=use_tensorboard,
+                    return_timing=True,
                 )
+                _accumulate_timing(timing_info)
             elif share_middle_mlp:
-                trained_model, history = tensor_train(
+                trained_model, history, timing_info = tensor_train(
                     property_name=prop,
                     embedding_layer=embedding_layer,
                     invariant_layers=invariant_layers,
@@ -822,9 +841,11 @@ def train(
                     loss_func=tensor_loss_func,
                     limit=tensor_limit,
                     use_amp=use_amp,
+                    return_timing=True,
                 )
+                _accumulate_timing(timing_info)
             else:
-                trained_model, history = tensor_train(
+                trained_model, history, timing_info = tensor_train(
                     property_name=prop,
                     embedding_layer=embedding_layer,
                     invariant_layers=invariant_layers,
@@ -848,7 +869,9 @@ def train(
                     loss_func=tensor_loss_func,
                     limit=tensor_limit,
                     use_amp=use_amp,
+                    return_timing=True,
                 )
+                _accumulate_timing(timing_info)
             tensor_models[prop] = trained_model
             tensor_train_history[prop] = history
 
@@ -860,6 +883,12 @@ def train(
             #     equivariant_layers = trained_model.equivariant_layers
     else:
         tensor_models = None
+
+    print(
+        f"Total training time (excluding checkpoint loading): {total_training_seconds:.2f}s, "
+        f"avg per epoch: {total_training_seconds / max(total_training_epochs, 1):.2f}s "
+        f"over {total_training_epochs} epochs"
+    )
 
     return (
         scalar_models,

@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import os
+import time
 from pathlib import Path
 
 from src.model import Model, InvariantOnlyModel
@@ -80,6 +81,7 @@ def scalar_train(
     use_amp: bool = True,
     scalar_invariant_only: bool = True,
     model_instance=None,
+    return_timing: bool = False,
 ):
     """
     Train a scalar property prediction model with validation.
@@ -216,6 +218,9 @@ def scalar_train(
     val_mae = 0.0
     if val_mae_scores:
         val_mae = val_mae_scores[-1]
+
+    train_start_time = time.perf_counter()
+    epochs_ran = 0
     
     model.train()
     for epoch in range(start_epoch, min(num_epochs, start_epoch + limit)):
@@ -337,8 +342,11 @@ def scalar_train(
             )
             print(f"Saved checkpoint at epoch {epoch+1} to {checkpoint_path}")
 
+        epochs_ran += 1
+
+    train_elapsed_seconds = time.perf_counter() - train_start_time
+
     print(f"Training completed. Best val loss: {best_loss:.6f}, Final val MAE: {val_mae:.6f}")
-    
     writer.close()
     
     vis_dir = get_visualization_dir(pic_dir)
@@ -371,4 +379,10 @@ def scalar_train(
         "val_mae_scores": val_mae_scores,
     }
     
+    timing_info = {
+        "train_seconds": train_elapsed_seconds,
+        "epochs_ran": epochs_ran,
+    }
+    if return_timing:
+        return model, training_history, timing_info
     return model, training_history

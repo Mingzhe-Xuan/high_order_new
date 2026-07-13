@@ -71,6 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--target", default=None)
     parser.add_argument("--graph-mode", choices=("high_order", "gmtnet"), default=None)
     parser.add_argument("--max-neighbors", type=int, default=16)
+    parser.add_argument("--use-cgcnn", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--gmtnet-embed-dim", type=int, default=128)
     parser.add_argument("--gmtnet-num-attention-layers", type=int, default=2)
     parser.add_argument("--use-tensorboard", action=argparse.BooleanOptionalAction, default=True)

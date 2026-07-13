@@ -348,6 +348,7 @@ def train(
     gmtnet_embed_dim: int = 128,
     gmtnet_num_attention_layers: int = 2,
     use_tensorboard: bool = True,
+    use_cgcnn: bool = False,
 ):
     """
     1. self train: emb, inv, eqv, deco, readout - scalar train: emb, inv, deco - tensor train: emb, inv, eqv, deco, readout
@@ -551,6 +552,7 @@ def train(
             gmtnet_force_model = _create_gmtnet_force_model(
                 gmtnet_embed_dim=gmtnet_embed_dim,
                 gmtnet_num_attention_layers=gmtnet_num_attention_layers,
+                use_cgcnn=use_cgcnn,
             )
             self_trained_model, self_timing = self_train(
                 embedding_layer=None,
@@ -645,6 +647,7 @@ def train(
                 scalar_properties,
                 gmtnet_embed_dim=gmtnet_embed_dim,
                 gmtnet_num_attention_layers=gmtnet_num_attention_layers,
+                use_cgcnn=use_cgcnn
             )
         else:
             scalar_models = _create_scalar_models(
@@ -767,6 +770,7 @@ def train(
                 use_mask=True,
                 gmtnet_embed_dim=gmtnet_embed_dim,
                 gmtnet_num_attention_layers=gmtnet_num_attention_layers,
+                use_cgcnn=use_cgcnn
             )
         else:
             tensor_models = _create_tensor_models(

@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 
 from .materials_db_reader import MaterialsProjectDatabase
-from .tensor_dataset import get_cgcnn_atom_features_from_ase
+from .tensor_dataset import get_atom_type_from_ase
 
 
 def get_ase_gmtnet_neighbor_list(atoms, cutoff: float, max_neighbors: int = 16):
@@ -55,11 +55,13 @@ class MPDataset(Dataset):
         num_perturb: int = 1,
         graph_mode: str = "high_order",
         max_neighbors: int = 16,
+        use_cgcnn: bool = False,
     ):
         self.db_path = db_path
         self.cutoff = cutoff
         self.graph_mode = graph_mode
         self.max_neighbors = max_neighbors
+        self.use_cgcnn = use_cgcnn
         # Deprecated parameter, do no use
         self.num_perturb = num_perturb
         # Cache edge_index and edge_vec to avoid repeated neighbor list calculation
@@ -154,11 +156,7 @@ class MPDataset(Dataset):
             if atoms is None:
                 raise ValueError(f"No atoms data found for index {idx}")
             atomic_numbers = torch.tensor(atoms.get_atomic_numbers(), dtype=torch.long)
-            atom_type = (
-                get_cgcnn_atom_features_from_ase(atoms)
-                if self.graph_mode == "gmtnet"
-                else atomic_numbers
-            )
+            atom_type = get_atom_type_from_ase(atoms, self.use_cgcnn)
             num_nodes = int(atomic_numbers.shape[0])
             # atom_coords: (num_nodes, 3)
             atom_coords = torch.tensor(atoms.get_positions(), dtype=torch.float32)

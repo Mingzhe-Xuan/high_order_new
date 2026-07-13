@@ -14,9 +14,16 @@ def get_mp_dataloader(
     worker_init_fn = None,
     graph_mode: str = "high_order",
     max_neighbors: int = 16,
+    use_cgcnn: bool = False,
 ) -> DataLoader:
     db_path = name_path_dict["mp"]
-    dataset = MPDataset(db_path, cutoff, graph_mode=graph_mode, max_neighbors=max_neighbors)
+    dataset = MPDataset(
+        db_path,
+        cutoff,
+        graph_mode=graph_mode,
+        max_neighbors=max_neighbors,
+        use_cgcnn=use_cgcnn,
+    )
     return DataLoader(
         dataset, 
         batch_size=batch_size, 

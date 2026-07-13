@@ -5,7 +5,7 @@ from .tensor_dataset import TensorDataset
 
 
 def get_tensor_dataloader(
-    path, property_name, cutoff, batch_size, pin_memory=True, num_workers=0, shuffle=True, graph_mode="high_order", max_neighbors=16
+    path, property_name, cutoff, batch_size, pin_memory=True, num_workers=0, shuffle=True, graph_mode="high_order", max_neighbors=16, use_cgcnn=False
 ):
     if "dielectric" in property_name:
         l_max = 2
@@ -16,7 +16,15 @@ def get_tensor_dataloader(
     else:
         raise NotImplementedError("property_name not supported")
 
-    dataset = TensorDataset(path, property_name, l_max, cutoff, graph_mode=graph_mode, max_neighbors=max_neighbors)
+    dataset = TensorDataset(
+        path,
+        property_name,
+        l_max,
+        cutoff,
+        graph_mode=graph_mode,
+        max_neighbors=max_neighbors,
+        use_cgcnn=use_cgcnn,
+    )
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -42,6 +50,7 @@ def get_tensor_dataloaders_split(
     worker_init_fn = None,
     graph_mode: str = "high_order",
     max_neighbors: int = 16,
+    use_cgcnn: bool = False,
 ) -> tuple[DataLoader, DataLoader, DataLoader]:
     """
     Creates train, validation, and test data loaders from a tensor dataset with specified ratios.
@@ -82,7 +91,15 @@ def get_tensor_dataloaders_split(
         raise NotImplementedError("property_name not supported")
     
     # Create the full dataset
-    dataset = TensorDataset(path, property_name, l_max, cutoff, graph_mode=graph_mode, max_neighbors=max_neighbors)
+    dataset = TensorDataset(
+        path,
+        property_name,
+        l_max,
+        cutoff,
+        graph_mode=graph_mode,
+        max_neighbors=max_neighbors,
+        use_cgcnn=use_cgcnn,
+    )
     
     # Validate the ratios
     total_ratio = sum(train_val_test)

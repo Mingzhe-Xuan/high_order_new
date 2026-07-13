@@ -82,6 +82,7 @@ def _create_scalar_dataloaders(
     worker_init_fn=None,
     graph_mode="high_order",
     max_neighbors=16,
+    use_cgcnn=False,
 ):
     """Create dataloaders for scalar properties."""
     dataloaders = {}
@@ -101,6 +102,7 @@ def _create_scalar_dataloaders(
             worker_init_fn=worker_init_fn,
             graph_mode=graph_mode,
             max_neighbors=max_neighbors,
+            use_cgcnn=use_cgcnn,
         )
         dataloaders[f"{prop}_trainset"] = trainset
         dataloaders[f"{prop}_valset"] = valset
@@ -121,6 +123,7 @@ def _create_tensor_dataloaders(
     num_workers,
     graph_mode,
     max_neighbors,
+    use_cgcnn,
     worker_init_fn=None,
 ):
     """Create dataloaders for tensor properties."""
@@ -141,6 +144,7 @@ def _create_tensor_dataloaders(
             worker_init_fn=worker_init_fn,
             graph_mode=graph_mode,
             max_neighbors=max_neighbors,
+            use_cgcnn=use_cgcnn,
         )
         dataloaders[f"{prop}_trainset"] = trainset
         dataloaders[f"{prop}_valset"] = valset
@@ -221,6 +225,7 @@ def _get_params_to_save(
     gmtnet_num_attention_layers,
     graph_mode,
     max_neighbors,
+    use_cgcnn,
     use_tensorboard,
 ):
     if model_type == "gmtnet":
@@ -254,6 +259,7 @@ def _get_params_to_save(
             "num_workers": num_workers,
             "graph_mode": graph_mode,
             "max_neighbors": max_neighbors,
+            "use_cgcnn": use_cgcnn,
             "use_tensorboard": use_tensorboard,
         }
 
@@ -311,6 +317,7 @@ def _get_params_to_save(
         "gmtnet_num_attention_layers": gmtnet_num_attention_layers,
         "graph_mode": graph_mode,
         "max_neighbors": max_neighbors,
+        "use_cgcnn": use_cgcnn,
         "use_tensorboard": use_tensorboard,
     }
 
@@ -377,6 +384,7 @@ def main(
     gmtnet_num_attention_layers: int = 2,
     graph_mode: str = "high_order",
     max_neighbors: int = 16,
+    use_cgcnn: bool = False,
     use_tensorboard: bool = True,
 ):
     print("Start running...")
@@ -438,6 +446,7 @@ def main(
         gmtnet_num_attention_layers=gmtnet_num_attention_layers,
         graph_mode=graph_mode,
         max_neighbors=max_neighbors,
+        use_cgcnn=use_cgcnn,
         use_tensorboard=use_tensorboard,
     )
     params_path = save_params_json(params_to_save, checkpoint_dir)
@@ -464,6 +473,7 @@ def main(
                 worker_init_fn=lambda worker_id: worker_init_fn(worker_id, seed) if num_workers > 0 else None,
                 graph_mode=graph_mode,
                 max_neighbors=max_neighbors,
+                use_cgcnn=use_cgcnn,
             )
             batch_save_interval = None
         if USE_ALEX:
@@ -476,6 +486,7 @@ def main(
                 worker_init_fn=lambda worker_id: worker_init_fn(worker_id, seed) if num_workers > 0 else None,
                 graph_mode=graph_mode,
                 max_neighbors=max_neighbors,
+                use_cgcnn=use_cgcnn,
             )
             batch_save_interval = 10000
     else:
@@ -496,6 +507,7 @@ def main(
             worker_init_fn=lambda worker_id: worker_init_fn(worker_id, seed) if num_workers > 0 else None,
             graph_mode=graph_mode,
             max_neighbors=max_neighbors,
+            use_cgcnn=use_cgcnn,
         )
     else:
         scalar_dataloaders = None
@@ -513,6 +525,7 @@ def main(
             num_workers,
             graph_mode,
             max_neighbors,
+            use_cgcnn,
             worker_init_fn=lambda worker_id: worker_init_fn(worker_id, seed) if num_workers > 0 else None,
         )
     else:
@@ -585,6 +598,7 @@ def main(
         gmtnet_embed_dim=gmtnet_embed_dim,
         gmtnet_num_attention_layers=gmtnet_num_attention_layers,
         use_tensorboard=use_tensorboard,
+        use_cgcnn=use_cgcnn,
     )
 
     print("Start testing...")

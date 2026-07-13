@@ -7,7 +7,7 @@ import os
 from tqdm import tqdm
 
 from .tensor_dataset import (
-    get_cgcnn_atom_features_from_structure,
+    get_atom_type_from_structure,
     get_gmtnet_neighbor_list,
     get_neighbor_list,
 )
@@ -21,11 +21,13 @@ class ScalarDataset(Dataset):
         cutoff: float,
         graph_mode: str = "high_order",
         max_neighbors: int = 16,
+        use_cgcnn: bool = False,
     ):
         self.property_name = property_name
         self.cutoff = cutoff
         self.graph_mode = graph_mode
         self.max_neighbors = max_neighbors
+        self.use_cgcnn = use_cgcnn
         with open(path, "rb") as f:
             self.data: List[Dict[str, Any]] = pkl.load(f)
 
@@ -146,11 +148,7 @@ class ScalarDataset(Dataset):
 
         structure = self.data[idx]["structure"]
         atomic_numbers = torch.tensor(structure.atomic_numbers, dtype=torch.long)
-        atom_type = (
-            get_cgcnn_atom_features_from_structure(structure)
-            if self.graph_mode == "gmtnet"
-            else atomic_numbers
-        )
+        atom_type = get_atom_type_from_structure(structure, self.use_cgcnn)
         num_nodes = int(atomic_numbers.shape[0])
         # atom_coords: (num_nodes,3)
         atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)

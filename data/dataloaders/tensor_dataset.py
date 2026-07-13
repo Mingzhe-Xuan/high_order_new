@@ -62,6 +62,20 @@ def get_cgcnn_atom_features_from_ase(atoms) -> torch.Tensor:
     return _cgcnn_features_from_symbols(atoms.get_chemical_symbols())
 
 
+def get_atom_type_from_structure(structure, use_cgcnn: bool = False) -> torch.Tensor:
+    atomic_numbers = torch.tensor(structure.atomic_numbers, dtype=torch.long)
+    if use_cgcnn:
+        return get_cgcnn_atom_features_from_structure(structure)
+    return atomic_numbers
+
+
+def get_atom_type_from_ase(atoms, use_cgcnn: bool = False) -> torch.Tensor:
+    atomic_numbers = torch.tensor(atoms.get_atomic_numbers(), dtype=torch.long)
+    if use_cgcnn:
+        return get_cgcnn_atom_features_from_ase(atoms)
+    return atomic_numbers
+
+
 def _rm_duplicates(vectors: np.ndarray) -> np.ndarray:
     seen = []
     for vector in vectors.reshape(-1, 9):
@@ -239,12 +253,13 @@ def get_gmtnet_neighbor_list(structure, cutoff: float, max_neighbors: int = 16):
 
 
 class TensorDataset(Dataset):
-    def __init__(self, path: str, property_name: str, l_max: int, cutoff: float, graph_mode: str = "high_order", max_neighbors: int = 16):
+    def __init__(self, path: str, property_name: str, l_max: int, cutoff: float, graph_mode: str = "high_order", max_neighbors: int = 16, use_cgcnn: bool = False):
         self.property_name = property_name
         self.l_max = l_max
         self.cutoff = cutoff
         self.graph_mode = graph_mode
         self.max_neighbors = max_neighbors
+        self.use_cgcnn = use_cgcnn
         with open(path, "rb") as f:
             self.data = pkl.load(f)
 
@@ -359,11 +374,7 @@ class TensorDataset(Dataset):
 
         structure = self.data[idx]["structure"]
         atomic_numbers = torch.tensor(structure.atomic_numbers, dtype=torch.long)
-        atom_type = (
-            get_cgcnn_atom_features_from_structure(structure)
-            if self.graph_mode == "gmtnet"
-            else atomic_numbers
-        )
+        atom_type = get_atom_type_from_structure(structure, self.use_cgcnn)
         num_nodes = int(atomic_numbers.shape[0])
         # atom_coords: (num_nodes,3)
         atom_coords = torch.tensor(structure.cart_coords, dtype=torch.float32)

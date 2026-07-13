@@ -14,9 +14,10 @@ def get_alexandria_dataloader(
     worker_init_fn = None,
     graph_mode: str = "high_order",
     max_neighbors: int = 16,
+    use_cgcnn: bool = False,
 ) -> DataLoader:
     db_path = name_path_dict["alexandria"]
-    dataset = AlexandriaDataset(db_path, cutoff, graph_mode, max_neighbors)
+    dataset = AlexandriaDataset(db_path, cutoff, graph_mode, max_neighbors, use_cgcnn)
     return DataLoader(
         dataset, 
         batch_size=batch_size, 

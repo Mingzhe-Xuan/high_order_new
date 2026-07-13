@@ -3,6 +3,7 @@ import numpy as np
 import json
 from typing import List, Dict, Any, Optional
 from ase import Atoms
+from pymatgen.core.structure import Structure
 import pickle as pkl
 
 class AlexandriaDatabase:
@@ -33,7 +34,7 @@ class AlexandriaDatabase:
             return None
         return self._parse_row(row)
     
-    def get_structure_by_id(self, row_id: int) -> Optional[Dict[str, Any]]:
+    def get_structure_by_id(self, row_id: int) -> Optional[Structure]:
         data = self.get_row_by_id(row_id)
         if data is None:
             return None

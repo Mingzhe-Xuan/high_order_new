@@ -14,8 +14,16 @@ def get_scalar_dataloader(
     shuffle: bool = True,
     graph_mode: str = "high_order",
     max_neighbors: int = 16,
+    use_cgcnn: bool = False,
 ) -> DataLoader:
-    dataset = ScalarDataset(path, property_name, cutoff, graph_mode, max_neighbors)
+    dataset = ScalarDataset(
+        path,
+        property_name,
+        cutoff,
+        graph_mode,
+        max_neighbors,
+        use_cgcnn,
+    )
     return DataLoader(
         dataset, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers, shuffle=shuffle
     )
@@ -36,6 +44,7 @@ def get_scalar_dataloaders_split(
     worker_init_fn = None,
     graph_mode: str = "high_order",
     max_neighbors: int = 16,
+    use_cgcnn: bool = False,
 ) -> tuple[DataLoader, DataLoader, DataLoader]:
     """
     Creates train, validation, and test data loaders from a scalar dataset with specified ratios.
@@ -66,7 +75,14 @@ def get_scalar_dataloaders_split(
     torch.manual_seed(seed)
     
     # Create the full dataset
-    dataset = ScalarDataset(path, property_name, cutoff, graph_mode, max_neighbors)
+    dataset = ScalarDataset(
+        path,
+        property_name,
+        cutoff,
+        graph_mode,
+        max_neighbors,
+        use_cgcnn,
+    )
     
     # Validate the ratios
     total_ratio = sum(train_val_test)

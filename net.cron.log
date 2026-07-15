@@ -1,0 +1,79 @@
+--2026-07-14 19:26:39--  http://wlt.ustc.edu.cn/cgi-bin/ip
+Resolving wlt.ustc.edu.cn (wlt.ustc.edu.cn)... 202.38.64.59
+Connecting to wlt.ustc.edu.cn (wlt.ustc.edu.cn)|202.38.64.59|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified [text/html]
+Saving to: 鈥楽TDOUT鈥�
+<htm><head><title>网络通</title>
+<META http-equiv=Content-Type content="text/html; charset=gb2312">
+<meta http-equiv="pragma" content="no-cache" />
+<meta http-equiv="Cache-Control" CONTENT="no-cache">
+<style type="text/css">
+<!--
+a:link {
+color: #0000ff;
+text-decoration: underline;
+}
+a:visited {
+color: #0000ff;
+text-decoration: underline;
+}
+-->
+</style>
+</head><body bgcolor="#dddddd" text="#000000">
+<a href=/cgi-bin/ip?cmd=disp>刷新显示</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href=http://test.ustc.edu.cn/ target=_blank>校内测速</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href=/cgi-bin/ip?cmd=pref>常用设置</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href=/cgi-bin/ip?cmd=logout>退出登录</a><p>
+用户guqq拥有的权限<table border=1 cellspacing=0 bordercolor="#cccccc">
+<tr><th>序号</th><th align=center>权限</th><th align=center>状态</th><th align>到期日</th><th align=center>其他</th></tr>
+<tr><td align=center>1</td><td>VPN接入权限</td><td align=center>开通</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td align=center>2</td><td>完全访问权限</td><td align=center>开通</td><td>&nbsp;</td><td>最大连接数10</td></tr>
+</table>
+<p><table border=0 width=620 cellspacing=0 bordercolor="#cccccc"><tr><td>当前IP地址211.86.155.221状态:<br>
+出口: 1教育网出口<br>
+权限: 国际
+</td><td>信息：网络设置成功<p>
+</td></tr></table>
+<form action=/cgi-bin/ip method=get><input type=hidden name=cmd value=set>
+<table border=1 width=620 cellspacing=0 bordercolor="#cccccc"><tr><th width=80% align=center>出口选择</th><th width=20% align=center>使用时限</th></tr>
+<tr><td>
+<input type=radio name=type value=0  id=t0><label for=t0> 1教育网出口(国际,仅用教育网访问,适合看文献)</label></input><br>
+<input type=radio name=type value=1  id=t1><label for=t1> 2电信网出口(国际,到教育网走教育网)</label></input><br>
+<input type=radio name=type value=2  id=t2><label for=t2> 3联通网出口(国际,到教育网走教育网)</label></input><br>
+<input type=radio name=type value=3  id=t3><label for=t3> 4电信网出口2(国际,到教育网免费地址走教育网)</label></input><br>
+<input type=radio name=type value=4  id=t4><label for=t4> 5联通网出口2(国际,到教育网免费地址走教育网)</label></input><br>
+<input type=radio name=type value=5  id=t5><label for=t5> 6电信网出口3(国际,默认电信,其他分流)</label></input><br>
+<input type=radio name=type value=6 checked id=t6><label for=t6> 7联通网出口3(国际,默认联通,其他分流)</label></input><br>
+<input type=radio name=type value=7  id=t7><label for=t7> 8教育网出口2(国际,默认教育网,其他分流)</label></input><br><br>
+<input type=radio name=type value=8  id=t8><label for=t8> 9移动网出口(国际,无P2P或带宽限制)</label></input><br>
+<br>访问文献资源建议使用1出口<br><br>&nbsp;&nbsp;&nbsp;&nbsp;<a href=/link.html target=_blank>几种出口的解释</a>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href=http://ns4.ustc.edu.cn target=_blank>各出口流量</a>
+</td>
+<td>
+<input type=radio name=exp value=3600  id=e0><label for=e0>1小时</label></input><br>
+<input type=radio name=exp value=14400 checked id=e1><label for=e1>4小时</label></input><br>
+<input type=radio name=exp value=39600  id=e2><label for=e2>11小时</label></input><br>
+<input type=radio name=exp value=50400  id=e3><label for=e3>14小时</label></input><br>
+<input type=radio name=exp value=0  id=e4><label for=e4>永久</label></input><br>
+</td></tr>
+<tr><td colspan=2 align=center><br>
+<input name=go type=submit value=' 开通网络 '> &nbsp; &nbsp; &nbsp; &nbsp;<input name=setdefault type=submit value=' 退出登录 '></td></tr>
+</table><p></form>
+<p>最近日志&nbsp;&nbsp<a href=/cgi-bin/ip?cmd=disp&log=1>更多日志</a>&nbsp;&nbsp;<a href=/cgi-bin/ip?cmd=disp&log=2>VPN日志</a>
+<table  border=1 cellspacing=0 bordercolor="#cccccc"><tr><th>时间</th><th>IP地址</th><th>消息</th></tr>
+<tr><td>2026-07-14 19:26:39</td><td>211.86.155.221</td><td>将211.86.155.221设置为 1教育网出口 国际 永久</td></tr>
+<tr><td>2026-07-14 19:25:02</td><td>211.86.155.221</td><td>登录</td></tr>
+<tr><td>2026-07-14 19:25:02</td><td>211.86.155.99</td><td>其他登录，将211.86.155.99设置为 1教育网出口 校内</td></tr>
+<tr><td>2026-07-14 19:25:02</td><td>211.86.155.221<
+     0K .../td><td>将211.86.155.221设置为 1教育网出口 国际 永久</td></tr>
+<tr><td>2026-07-14 19:22:29</td><td>211.86.155.99</td><td>登录</td></tr>
+<tr><td>2026-07-14 19:22:29</td><td>211.86.155.221</td><td>其他登录，将211.86.155.221设置为 1教育网出口 校内</td></tr>
+<tr><td>2026-07-14 19:22:29</td><td>211.86.155.99</td><td>将211.86.155.99设置为 1教育网出口 国际 永久</td></tr>
+<tr><td>2026-07-14 18:29:36</td><td>211.86.155.221</td><td>登录</td></tr>
+<tr><td>2026-07-14 18:29:36</td><td>211.86.155.99</td><td>其他登录，将211.86.155.99设置为 1教育网出口 校内</td></tr>
+<tr><td>2026-07-14 18:29:36</td><td>211.86.155.221</td><td>将211.86.155.221设置为 1教育网出口 国际 永久</td></tr>
+</table>
+<p>使用中任何问题请联系<a href=http://netfee.ustc.edu.cn/faq target=_blank >网络信息中心用户服务部</a><p>
+</body></html>
+.                                                   99.3M=0s
+
+2026-07-14 19:26:39 (99.3 MB/s) - written to stdout [4814]
+
